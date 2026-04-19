@@ -3,11 +3,11 @@ version: "3.7"
 services:
   app_proxy:
     environment:
-      APP_HOST: frontend
+      APP_HOST: zeroq-riven_frontend_1
       APP_PORT: 3000
 
   server:
-    image: spoked/riven:main@sha256:08d9932dd1b4724b3c70057c3fbcdb79c4631b0eccfecbd64fb5556cce0ec5ff
+    image: spoked/riven:sha-06f5a78@sha256:08d9932dd1b4724b3c70057c3fbcdb79c4631b0eccfecbd64fb5556cce0ec5ff
     restart: on-failure
     stop_grace_period: 1m
     cap_add:
@@ -37,7 +37,7 @@ services:
         condition: service_healthy
 
   frontend:
-    image: spoked/riven-frontend:main@sha256:14f43d3043d15e8fbd24d735f1771f94d85b52674afd62b5079ce843a41c3e45
+    image: spoked/riven-frontend:sha-3c92981@sha256:14f43d3043d15e8fbd24d735f1771f94d85b52674afd62b5079ce843a41c3e45
     restart: on-failure
     stop_grace_period: 1m
     environment:
