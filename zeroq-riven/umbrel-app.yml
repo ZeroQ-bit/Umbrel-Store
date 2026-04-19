@@ -4,7 +4,7 @@ name: Riven
 tagline: Debrid-powered media manager for Plex and Jellyfin
 icon: https://avatars.githubusercontent.com/u/172203452?v=4
 category: media
-version: "v0.23.6-11"
+version: "v0.23.6-12"
 port: 8080
 description: >-
   Riven builds a virtual media library from your configured Debrid and media manager services, then exposes it as a browsable filesystem for apps like Plex.
@@ -31,7 +31,7 @@ repo: https://github.com/rivenmedia/riven
 support: https://github.com/rivenmedia/riven/issues
 gallery: []
 releaseNotes: >-
-  Uses the Umbrel box's actual LAN IP as Riven's auth origin instead of assuming a hostname, fixing Better Auth rejecting register and login submissions as invalid origin on setups that only open the app via 192.168.x.x.
+  Uses the Umbrel box's primary routed LAN IP for Riven's auth origin instead of a brittle first-match host lookup, fixing invalid-origin auth failures on systems with Docker bridge addresses appearing before the real 192.168.x.x address.
 dependencies: []
 path: ""
 defaultUsername: ""
