@@ -1,0 +1,38 @@
+manifestVersion: 1.1
+id: riven
+category: media
+name: Riven
+version: "sha-06f5a78"
+tagline: Debrid-powered media manager for Plex and Jellyfin
+description: >-
+  Riven builds a virtual media library from your configured Debrid and media manager services, then exposes it as a browsable filesystem for apps like Plex.
+
+
+  On Umbrel, Riven stores its working data inside the app data directory and mounts its virtual library under a shared mount path so Plex can index it.
+
+
+  🛠️ SET-UP INSTRUCTIONS
+
+
+  1. Install Riven and open the web UI.
+  2. Configure your Debrid, indexer, and media manager integrations inside Riven.
+  3. In Plex, add a library that points to `/riven/movies` and/or `/riven/shows`.
+  4. After Riven finishes mounting content, refresh the matching Plex library.
+
+
+  Riven relies on FUSE and a shared mount path. This Umbrel package prepares that mount automatically before the app starts.
+developer: Riven Media
+website: https://github.com/rivenmedia/riven
+dependencies: []
+repo: https://github.com/rivenmedia/riven
+support: https://github.com/rivenmedia/riven/issues
+port: 8080
+gallery: []
+path: ""
+defaultUsername: ""
+defaultPassword: ""
+releaseNotes: ""
+torOnly: false
+submitter: ZeroQ
+submission: https://github.com/ZeroQ-bit/Umbrel-Store
+permissions: []
