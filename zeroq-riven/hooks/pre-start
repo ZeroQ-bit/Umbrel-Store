@@ -9,6 +9,7 @@ FRONTEND_DATA_DIR="${APP_DATA_DIR}/frontend"
 POSTGRES_DATA_DIR="${APP_DATA_DIR}/postgres"
 
 mkdir -p "${MOUNT_DIR}" "${RIVEN_DATA_DIR}" "${FRONTEND_DATA_DIR}" "${POSTGRES_DATA_DIR}"
+mkdir -p "${RIVEN_DATA_DIR}/logs"
 
 if ! mountpoint -q "${MOUNT_DIR}"; then
   mount --bind "${MOUNT_DIR}" "${MOUNT_DIR}"
@@ -18,6 +19,8 @@ PROPAGATION="$(findmnt -T "${MOUNT_DIR}" -o PROPAGATION -n 2>/dev/null || true)"
 if [[ "${PROPAGATION}" != "shared" && "${PROPAGATION}" != "rshared" ]]; then
   mount --make-rshared "${MOUNT_DIR}"
 fi
+
+chown -R 1000:1000 "${RIVEN_DATA_DIR}" "${FRONTEND_DATA_DIR}" "${MOUNT_DIR}"
 
 if [[ ! -e /dev/fuse ]]; then
   echo "Warning: /dev/fuse is not available on this Umbrel host. Riven will not be able to mount its library." >&2
