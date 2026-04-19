@@ -2,9 +2,10 @@
 set -euo pipefail
 
 APP_DIR="$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")"
-MOUNT_DIR="${APP_DIR}/data/mount"
-RIVEN_DATA_DIR="${APP_DIR}/data/riven"
-POSTGRES_DATA_DIR="${APP_DIR}/data/postgres"
+APP_DATA_DIR="${APP_DIR}/data"
+MOUNT_DIR="${UMBREL_ROOT}/data/storage/downloads/riven"
+RIVEN_DATA_DIR="${APP_DATA_DIR}/riven"
+POSTGRES_DATA_DIR="${APP_DATA_DIR}/postgres"
 
 mkdir -p "${MOUNT_DIR}" "${RIVEN_DATA_DIR}" "${POSTGRES_DATA_DIR}"
 
