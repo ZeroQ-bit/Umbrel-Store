@@ -42,12 +42,15 @@ services:
     image: spoked/riven-frontend:sha-3c92981@sha256:14f43d3043d15e8fbd24d735f1771f94d85b52674afd62b5079ce843a41c3e45
     restart: on-failure
     stop_grace_period: 1m
+    user: "1000:1000"
     environment:
       TZ: Etc/UTC
       BACKEND_URL: "http://server:8080"
       BACKEND_API_KEY: "0123456789abcdef0123456789abcdef"
       DATABASE_URL: "/riven/data/riven.db"
       AUTH_SECRET: "${APP_SEED}"
+      DISABLE_EMAIL_PASSWORD: "false"
+      ENABLE_EMAIL_PASSWORD_SIGNUP: "true"
       ORIGIN: "http://${DEVICE_DOMAIN_NAME}:8080"
     volumes:
       - ${APP_DATA_DIR}/data/frontend:/riven/data

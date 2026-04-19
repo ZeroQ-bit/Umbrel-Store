@@ -4,7 +4,7 @@ name: Riven
 tagline: Debrid-powered media manager for Plex and Jellyfin
 icon: https://avatars.githubusercontent.com/u/172203452?v=4
 category: media
-version: "v0.23.6-7"
+version: "v0.23.6-8"
 port: 8080
 description: >-
   Riven builds a virtual media library from your configured Debrid and media manager services, then exposes it as a browsable filesystem for apps like Plex.
@@ -31,7 +31,7 @@ repo: https://github.com/rivenmedia/riven
 support: https://github.com/rivenmedia/riven/issues
 gallery: []
 releaseNotes: >-
-  Forces Umbrel-safe Riven filesystem defaults by overriding the upstream /path mount settings to /mount, preventing the backend from crashing before first-time configuration.
+  Fixes first-boot auth on Umbrel by explicitly enabling username/password signup in the frontend package and running the frontend as the app user, so the initial admin registration form can submit cleanly.
 dependencies: []
 path: ""
 defaultUsername: ""
