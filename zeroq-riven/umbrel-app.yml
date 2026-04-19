@@ -4,7 +4,7 @@ name: Riven
 tagline: Debrid-powered media manager for Plex and Jellyfin
 icon: https://avatars.githubusercontent.com/u/172203452?v=4
 category: media
-version: "v0.23.6-13"
+version: "v0.23.6-14"
 port: 8080
 description: >-
   Riven builds a virtual media library from your configured Debrid and media manager services, then exposes it as a browsable filesystem for apps like Plex.
@@ -18,7 +18,7 @@ description: >-
 
   1. Install Riven and open the web UI.
   2. Configure your Debrid, indexer, and media manager integrations inside Riven.
-  3. In Plex, add a library that points to `/downloads/riven/movies` and/or `/downloads/riven/shows`.
+  3. In Plex, add a library that points to `/mount/movies` and/or `/mount/shows`.
   4. After Riven finishes mounting content, refresh the matching Plex library.
 
 
@@ -31,7 +31,7 @@ repo: https://github.com/rivenmedia/riven
 support: https://github.com/rivenmedia/riven/issues
 gallery: []
 releaseNotes: >-
-  Makes Riven's SvelteKit frontend trust the standard Host header instead of x-forwarded-host, preventing auth form submissions on :8080 from being misclassified as cross-site when the proxy omits the port in forwarded-host handling.
+  Clarifies the Plex side of the Umbrel setup: Plex should index Riven from `/mount/movies` and `/mount/shows`, matching Riven's own mount path and the new recursive propagation bind in the Plex package.
 dependencies: []
 path: ""
 defaultUsername: ""

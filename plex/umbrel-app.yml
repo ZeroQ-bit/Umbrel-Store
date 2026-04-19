@@ -2,7 +2,7 @@ manifestVersion: 1
 id: plex
 category: media
 name: Plex
-version: "1.43.0.10492"
+version: "1.43.0.10492-riven1"
 tagline: Stream Movies & TV Shows
 description: >-
   Stream movies and TV shows, plus 300+ channels of live TV, instantly, without a subscription. Watch live TV and movies anywhere, from any device, with Plex.
@@ -30,20 +30,9 @@ permissions:
   - STORAGE_DOWNLOADS
   - GPU
 releaseNotes: >-
-  This update includes several improvements and bug fixes:
-    - Added support for square art and clear logo images for movies and TV shows
-    - Added local squareArt and clearLogo asset support for movies and TV shows
-    - Updated web interface to version 4.156.0
-    - Fixed EAC3 7.1 channel detection (channels now properly recognized)
-    - Fixed mpeg2 video and AAC codec profile transcoding errors
-    - Fixed green border artifacts when transcoding to HEVC
-    - Fixed aac_latm audio handling and timestamp errors on live TV streams
-    - Fixed music library crashes during matching operations
-    - Fixed NFO metadata refresh getting stuck
-    - Fixed thumbnail generation for rotated videos
-    - Fixed subtitle WebVTT transcoding sync issues
+  Adds a dedicated `/mount` bind for Riven with recursive slave propagation, so Plex can see Riven's live FUSE library at `/mount/movies` and `/mount/shows` instead of only the static downloads folder.
 
 
-  Full release notes are available at https://www.videohelp.com/software/Plex
+  The bundled Plex image is still Plex Media Server 1.43.0.10492. Full upstream release notes are available at https://www.videohelp.com/software/Plex
 submitter: Umbrel
 submission: https://github.com/getumbrel/umbrel-apps/commit/60878f278d544b204d8e7c96240c797f43a9b319
