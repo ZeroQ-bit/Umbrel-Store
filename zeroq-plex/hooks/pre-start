@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP_DIR="$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")"
+APP_DATA_DIR="${APP_DIR}/data"
+TARGET_CONFIG_DIR="${APP_DATA_DIR}/config"
+TARGET_TRANSCODE_DIR="${APP_DATA_DIR}/transcode"
+
+STOCK_APP_DATA_DIR="${UMBREL_ROOT}/app-data/plex/data"
+STOCK_CONFIG_DIR="${STOCK_APP_DATA_DIR}/config"
+STOCK_TRANSCODE_DIR="${STOCK_APP_DATA_DIR}/transcode"
+
+mkdir -p "${TARGET_CONFIG_DIR}" "${TARGET_TRANSCODE_DIR}"
+
+target_config_has_content() {
+  find "${TARGET_CONFIG_DIR}" -mindepth 1 ! -name '.gitkeep' -print -quit | grep -q .
+}
+
+if ! target_config_has_content && [[ -d "${STOCK_CONFIG_DIR}" ]]; then
+  echo "Importing existing stock Plex configuration into zeroq-plex app data..."
+  cp -a "${STOCK_CONFIG_DIR}/." "${TARGET_CONFIG_DIR}/"
+fi
+
+if [[ -d "${STOCK_TRANSCODE_DIR}" ]]; then
+  mkdir -p "${TARGET_TRANSCODE_DIR}"
+fi
+
+chown -R 1000:1000 "${TARGET_CONFIG_DIR}" "${TARGET_TRANSCODE_DIR}"
