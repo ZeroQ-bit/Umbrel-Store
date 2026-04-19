@@ -55,7 +55,7 @@ services:
       HOST_HEADER: "x-forwarded-host"
       PROTOCOL_HEADER: "x-forwarded-proto"
       PORT_HEADER: "x-forwarded-port"
-      ORIGIN: "http://${DEVICE_DOMAIN_NAME}:8080"
+      ORIGIN: "${APP_ZEROQ_RIVEN_LOCAL_URL}"
     volumes:
       - ${APP_DATA_DIR}/data/frontend:/riven/data
     depends_on:
