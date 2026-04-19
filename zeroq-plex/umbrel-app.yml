@@ -1,0 +1,46 @@
+manifestVersion: 1
+id: zeroq-plex
+category: media
+name: Plex (Riven)
+version: "1.43.0.10492.1"
+tagline: Stream Movies & TV Shows
+description: >-
+  Stream movies and TV shows, plus 300+ channels of live TV, instantly, without a subscription. Watch live TV and movies anywhere, from any device, with Plex.
+
+
+  Plex uses a server to house your media library and player apps to playback the media. Add, access, and share all the entertainment that matters to you, on almost any device.
+
+
+  This ZeroQ package is intended to replace the stock Umbrel Plex app when you want persistent Riven integration. It includes a dedicated `/mount` bind with recursive propagation so Plex can always see Riven's live library across Umbrel restarts.
+
+
+  Set Plex libraries to:
+  - `/mount/movies`
+  - `/mount/shows`
+
+
+  ⚠️ Because Plex still runs in host network mode on port 32400, uninstall or stop the stock Plex app before installing this package.
+developer: Plex
+website: https://www.plex.tv/
+dependencies: []
+repo: ""
+support: https://www.plex.tv/
+port: 32400
+gallery:
+  - 1.jpg
+  - 2.jpg
+  - 3.jpg
+path: /web
+defaultUsername: ""
+defaultPassword: ""
+torOnly: false
+permissions:
+  - STORAGE_DOWNLOADS
+  - GPU
+releaseNotes: >-
+  Community-store Plex build for ZeroQ App Store. Includes a permanent `/mount` bind for Riven with recursive slave propagation, so Plex can see `/mount/movies` and `/mount/shows` after Umbrel restarts.
+
+
+  The bundled Plex image is still Plex Media Server 1.43.0.10492. Full upstream release notes are available at https://www.videohelp.com/software/Plex
+submitter: ZeroQ
+submission: https://github.com/ZeroQ-bit/Umbrel-Store
