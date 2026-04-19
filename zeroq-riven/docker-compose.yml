@@ -3,11 +3,11 @@ version: "3.7"
 services:
   app_proxy:
     environment:
-      APP_HOST: zeroq-riven_frontend_1
+      APP_HOST: frontend
       APP_PORT: 3000
 
   server:
-    image: spoked/riven:v0.23.6@sha256:03ab5d11a2d64832b990557a34f15c237dd5cbca7c31f830fd2cf073638b8aaa
+    image: spoked/riven:main@sha256:08d9932dd1b4724b3c70057c3fbcdb79c4631b0eccfecbd64fb5556cce0ec5ff
     restart: on-failure
     stop_grace_period: 1m
     cap_add:
@@ -37,12 +37,12 @@ services:
         condition: service_healthy
 
   frontend:
-    image: spoked/riven-frontend:latest@sha256:dd9680cd50ba9e6780a89e4d61a8ab25bc6f152aeb82a33826160b36d8bc9d49
+    image: spoked/riven-frontend:main@sha256:14f43d3043d15e8fbd24d735f1771f94d85b52674afd62b5079ce843a41c3e45
     restart: on-failure
     stop_grace_period: 1m
     environment:
       TZ: Etc/UTC
-      BACKEND_URL: "http://zeroq-riven_server_1:8080"
+      BACKEND_URL: "http://server:8080"
       BACKEND_API_KEY: "0123456789abcdef0123456789abcdef"
       DATABASE_URL: "/riven/data/riven.db"
       AUTH_SECRET: "${APP_SEED}"
