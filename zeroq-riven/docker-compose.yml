@@ -52,6 +52,9 @@ services:
       AUTH_SECRET: "${APP_SEED}"
       DISABLE_EMAIL_PASSWORD: "false"
       ENABLE_EMAIL_PASSWORD_SIGNUP: "true"
+      HOST_HEADER: "x-forwarded-host"
+      PROTOCOL_HEADER: "x-forwarded-proto"
+      PORT_HEADER: "x-forwarded-port"
       ORIGIN: "http://${DEVICE_DOMAIN_NAME}:8080"
     volumes:
       - ${APP_DATA_DIR}/data/frontend:/riven/data
