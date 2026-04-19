@@ -5,6 +5,7 @@ services:
     environment:
       APP_HOST: zeroq-riven_frontend_1
       APP_PORT: 3000
+      PROXY_AUTH_ADD: "false"
 
   server:
     image: spoked/riven:sha-06f5a78@sha256:08d9932dd1b4724b3c70057c3fbcdb79c4631b0eccfecbd64fb5556cce0ec5ff
