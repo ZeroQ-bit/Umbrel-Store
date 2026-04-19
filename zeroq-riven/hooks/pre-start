@@ -7,18 +7,8 @@ MOUNT_DIR="${UMBREL_ROOT}/data/storage/downloads/riven"
 RIVEN_DATA_DIR="${APP_DATA_DIR}/riven"
 FRONTEND_DATA_DIR="${APP_DATA_DIR}/frontend"
 POSTGRES_DATA_DIR="${APP_DATA_DIR}/postgres"
-ENV_DIR="${APP_DATA_DIR}/env"
-BACKEND_ENV_FILE="${ENV_DIR}/backend.env"
-FRONTEND_ENV_FILE="${ENV_DIR}/frontend.env"
-API_KEY="${APP_SEED:0:32}"
-PUBLIC_ORIGIN="${APP_ZEROQ_RIVEN_LOCAL_URLS:-}"
-PUBLIC_ORIGIN="${PUBLIC_ORIGIN%%,*}"
 
-if [[ -z "${PUBLIC_ORIGIN}" ]]; then
-  PUBLIC_ORIGIN="http://${DEVICE_DOMAIN_NAME}:8080"
-fi
-
-mkdir -p "${MOUNT_DIR}" "${RIVEN_DATA_DIR}" "${FRONTEND_DATA_DIR}" "${POSTGRES_DATA_DIR}" "${ENV_DIR}"
+mkdir -p "${MOUNT_DIR}" "${RIVEN_DATA_DIR}" "${FRONTEND_DATA_DIR}" "${POSTGRES_DATA_DIR}"
 
 if ! mountpoint -q "${MOUNT_DIR}"; then
   mount --bind "${MOUNT_DIR}" "${MOUNT_DIR}"
@@ -32,15 +22,3 @@ fi
 if [[ ! -e /dev/fuse ]]; then
   echo "Warning: /dev/fuse is not available on this Umbrel host. Riven will not be able to mount its library." >&2
 fi
-
-cat >"${BACKEND_ENV_FILE}" <<EOF
-API_KEY=${API_KEY}
-EOF
-
-cat >"${FRONTEND_ENV_FILE}" <<EOF
-BACKEND_URL=http://zeroq-riven_server_1:8080
-BACKEND_API_KEY=${API_KEY}
-DATABASE_URL=/riven/data/riven.db
-AUTH_SECRET=${APP_SEED}
-ORIGIN=${PUBLIC_ORIGIN}
-EOF

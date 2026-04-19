@@ -17,12 +17,11 @@ services:
     shm_size: 1024m
     devices:
       - /dev/fuse
-    env_file:
-      - ${APP_DATA_DIR}/env/backend.env
     environment:
       PUID: "1000"
       PGID: "1000"
       TZ: Etc/UTC
+      API_KEY: "0123456789abcdef0123456789abcdef"
       RIVEN_FORCE_ENV: "true"
       RIVEN_DATABASE_HOST: postgresql+psycopg2://postgres:postgres@zeroq-riven-postgres/riven
     healthcheck:
@@ -41,10 +40,13 @@ services:
     image: spoked/riven-frontend:latest@sha256:dd9680cd50ba9e6780a89e4d61a8ab25bc6f152aeb82a33826160b36d8bc9d49
     restart: on-failure
     stop_grace_period: 1m
-    env_file:
-      - ${APP_DATA_DIR}/env/frontend.env
     environment:
       TZ: Etc/UTC
+      BACKEND_URL: "http://zeroq-riven_server_1:8080"
+      BACKEND_API_KEY: "0123456789abcdef0123456789abcdef"
+      DATABASE_URL: "/riven/data/riven.db"
+      AUTH_SECRET: "${APP_SEED}"
+      ORIGIN: "http://${DEVICE_DOMAIN_NAME}:8080"
     volumes:
       - ${APP_DATA_DIR}/data/frontend:/riven/data
     depends_on:
