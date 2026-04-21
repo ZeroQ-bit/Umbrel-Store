@@ -4,6 +4,7 @@ category: media
 name: Plex (Riven)
 version: "1.43.0.10492.2"
 tagline: Stream Movies & TV Shows
+icon: https://avatars.githubusercontent.com/u/11744877?v=4
 description: >-
   Stream movies and TV shows, plus 300+ channels of live TV, instantly, without a subscription. Watch live TV and movies anywhere, from any device, with Plex.
 
