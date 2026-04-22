@@ -1,0 +1,47 @@
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: streamarr-pro_server_1
+      APP_PORT: 8080
+      PROXY_AUTH_ADD: "false"
+
+  server:
+    image: ghcr.io/zeroq-bit/streamarr-pro:main
+    restart: on-failure
+    stop_grace_period: 1m
+    environment:
+      DATABASE_URL: postgres://streamarr:streamarr@postgres:5432/streamarr?sslmode=disable
+      JWT_SECRET: ${APP_SEED}
+      STREAMARR_DISABLE_SELF_UPDATE: "true"
+      TZ: Etc/UTC
+    volumes:
+      - ${APP_DATA_DIR}/data/cache:/app/cache
+      - ${APP_DATA_DIR}/data/logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  postgres:
+    image: postgres:16-alpine
+    restart: on-failure
+    stop_grace_period: 1m
+    environment:
+      POSTGRES_DB: streamarr
+      POSTGRES_USER: streamarr
+      POSTGRES_PASSWORD: streamarr
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data/pgdata
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U streamarr -d streamarr"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

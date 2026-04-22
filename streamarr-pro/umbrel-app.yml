@@ -1,0 +1,36 @@
+manifestVersion: 1
+id: streamarr-pro
+category: media
+name: StreamArr Pro
+version: "main"
+tagline: Self-hosted media server with live TV and IPTV support
+icon: https://raw.githubusercontent.com/ZeroQ-bit/StreamArr-Pro/main/streamarr-pro-ui/public/logo.png
+description: >-
+  StreamArr Pro is a self-hosted media management system with a Netflix-style UI, Stremio-compatible stream providers, live TV support, and Xtream Codes / M3U output for IPTV apps.
+
+
+  It combines movie and series discovery, Debrid-backed streaming, playlists, EPG, and IPTV source management in a single web app.
+
+
+  SET-UP INSTRUCTIONS
+
+
+  1. Open StreamArr Pro and create your first admin account.
+  2. Add your TMDB API key in Settings.
+  3. Configure your preferred Stremio addons, Debrid provider, and any live TV or Xtream sources.
+developer: ZeroQ
+website: https://github.com/ZeroQ-bit/StreamArr-Pro
+dependencies: []
+repo: https://github.com/ZeroQ-bit/StreamArr-Pro
+support: https://github.com/ZeroQ-bit/StreamArr-Pro/issues
+port: 8080
+gallery: []
+path: ""
+defaultUsername: ""
+defaultPassword: ""
+releaseNotes: >-
+  Initial Umbrel package for StreamArr Pro. Publish the GHCR image from the StreamArr-Pro repository before installing this app from the store.
+torOnly: false
+permissions: []
+submitter: ZeroQ
+submission: https://github.com/ZeroQ-bit/Umbrel-Store
