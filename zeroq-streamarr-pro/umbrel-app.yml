@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: StreamArr Pro
-version: "main-aa186ab-proxyfix2"
+version: "main-932ed70"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/StreamArr-Pro/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,7 +29,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Fixes Umbrel proxy routing by using a unique backend network alias instead of the generic server hostname, which prevents static assets like CSS and JavaScript from resolving to the wrong container on Umbrel's shared Docker network.
+  Fixes no-stream behavior on fresh Umbrel installs by auto-bootstrapping default Real-Debrid-backed provider addons when no explicit provider addon has been configured yet. Also preserves older saved Real-Debrid tokens after upgrade and clarifies the provider addon settings UI.
 torOnly: false
 permissions: []
 submitter: ZeroQ
