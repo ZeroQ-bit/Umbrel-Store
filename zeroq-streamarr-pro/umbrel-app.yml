@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: StreamArr Pro
-version: "main"
+version: "main-13aed0e"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/StreamArr-Pro/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,7 +29,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Initial Umbrel package for StreamArr Pro. Publish the GHCR image from the StreamArr-Pro repository before installing this app from the store.
+  Pins StreamArr Pro to the first published multi-architecture GHCR image for Umbrel installs.
 torOnly: false
 permissions: []
 submitter: ZeroQ
