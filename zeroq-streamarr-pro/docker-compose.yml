@@ -3,18 +3,19 @@ version: "3.7"
 services:
   app_proxy:
     environment:
-      APP_HOST: zeroq-streamarr-pro_server_1
+      APP_HOST: server
       APP_PORT: 8080
       PROXY_AUTH_ADD: "false"
 
   server:
-    image: ghcr.io/zeroq-bit/streamarr-pro:main-dc8e99a@sha256:0aac5607535c682654a4bfcb0946dbd5c63ac502a80ec0b040bb9b8289f1d0e1
+    image: ghcr.io/zeroq-bit/streamarr-pro:main-aa186ab@sha256:ac44182a8e7d9ff3ea90dc580635a82a871ef774318974870b5ef901bd146128
     restart: on-failure
     stop_grace_period: 1m
     environment:
       DATABASE_URL: postgres://streamarr:streamarr@postgres:5432/streamarr?sslmode=disable
       JWT_SECRET: ${APP_SEED}
       STREAMARR_DISABLE_SELF_UPDATE: "true"
+      STREAMARR_LISTEN_PORT: "8080"
       TZ: Etc/UTC
     volumes:
       - ${APP_DATA_DIR}/data/cache:/app/cache

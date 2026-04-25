@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: StreamArr Pro
-version: "main-dc8e99a-portfix2"
+version: "main-aa186ab"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/StreamArr-Pro/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,7 +29,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Applies live settings reload for TMDB, stream providers, and artwork enrichment so new integrations work without restarting the app. Also moves the Umbrel app proxy to a new host port to avoid conflicts with existing services.
+  Fixes Umbrel app startup by routing the app proxy to the backend service name instead of a non-resolvable container hostname, keeps the container listening on a stable internal port, and repairs the media_streams migration used by cached streams.
 torOnly: false
 permissions: []
 submitter: ZeroQ
