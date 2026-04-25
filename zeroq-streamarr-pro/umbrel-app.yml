@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: StreamArr Pro
-version: "main-aa186ab"
+version: "main-aa186ab-proxyfix2"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/StreamArr-Pro/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,7 +29,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Fixes Umbrel app startup by routing the app proxy to the backend service name instead of a non-resolvable container hostname, keeps the container listening on a stable internal port, and repairs the media_streams migration used by cached streams.
+  Fixes Umbrel proxy routing by using a unique backend network alias instead of the generic server hostname, which prevents static assets like CSS and JavaScript from resolving to the wrong container on Umbrel's shared Docker network.
 torOnly: false
 permissions: []
 submitter: ZeroQ
