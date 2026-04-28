@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-plextraktsync
 category: media
 name: PlexTraktSync
-version: "0.35.5.6"
+version: "0.35.5.7"
 tagline: Sync Trakt watch progress to Plex
 icon: https://raw.githubusercontent.com/Taxel/PlexTraktSync/main/trakt.ico
 description: >-
@@ -29,6 +29,6 @@ defaultPassword: ""
 torOnly: false
 permissions: []
 releaseNotes: >-
-  Restores the known-good static nginx startup path so the app page opens reliably on Umbrel. This isolates startup before the browser setup API is reintroduced.
+  Keeps the known-good nginx page on port 3490 and adds the PlexTraktSync setup API as a separate sidecar on port 3491, so the UI can keep opening even if setup actions need troubleshooting.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store/pull/2

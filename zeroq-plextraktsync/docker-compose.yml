@@ -11,3 +11,25 @@ services:
     restart: on-failure
     volumes:
       - ${APP_DATA_DIR}/data/web:/usr/share/nginx/html:ro
+
+  api:
+    image: ghcr.io/taxel/plextraktsync:0.35.5@sha256:de61cbdeeb242ed32efb2e16ed18cec6920098c0dc612e83ac68b93f01294b8a
+    command:
+      - sh
+      - -c
+      - python /app/web/server.py
+    restart: on-failure
+    stdin_open: true
+    tty: true
+    ports:
+      - "3491:3490"
+    volumes:
+      - ${APP_DATA_DIR}/data/config:/app/config
+      - ${APP_DATA_DIR}/data/web:/app/web:ro
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Australia/Perth
+      - WEB_PORT=3490
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
