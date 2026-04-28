@@ -47,4 +47,4 @@ releaseNotes: >-
 
   The bundled Plex image is still Plex Media Server 1.43.0.10492. Full upstream release notes are available at https://www.videohelp.com/software/Plex
 submitter: ZeroQ
-submission: https://github.com/ZeroQ-bit/Umbrel-Store
+submission: https://github.com/ZeroQ-bit/Umbrel-Store/pull/2
