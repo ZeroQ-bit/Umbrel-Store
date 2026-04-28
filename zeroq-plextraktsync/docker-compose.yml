@@ -3,7 +3,7 @@ version: "3.7"
 services:
   app_proxy:
     environment:
-      APP_HOST: plextraktsync_web_1
+      APP_HOST: zeroq-plextraktsync_web_1
       APP_PORT: 80
 
   plextraktsync:

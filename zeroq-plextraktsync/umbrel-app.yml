@@ -1,5 +1,5 @@
 manifestVersion: 1.1
-id: plextraktsync
+id: zeroq-plextraktsync
 category: media
 name: PlexTraktSync
 version: "0.35.5"

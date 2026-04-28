@@ -177,22 +177,22 @@
             <li>Run the login command below.</li>
             <li>Follow the Plex and Trakt prompts.</li>
           </ol>
-          <pre>~/umbrel/scripts/app compose plextraktsync exec plextraktsync plextraktsync login</pre>
+          <pre>~/umbrel/scripts/app compose zeroq-plextraktsync exec plextraktsync plextraktsync login</pre>
           <p>If Plex is on this Umbrel, use <code>http://host.docker.internal:32400</code> when asked for the Plex server URL.</p>
         </article>
 
         <article class="card">
           <h2>2. Run the import</h2>
           <p>Restart the app after login. PlexTraktSync will run <code>sync</code> once and then stay idle.</p>
-          <pre>~/umbrel/scripts/app restart plextraktsync</pre>
+          <pre>~/umbrel/scripts/app restart zeroq-plextraktsync</pre>
           <p>To sync again later, restart the app or run:</p>
-          <pre>~/umbrel/scripts/app compose plextraktsync exec plextraktsync plextraktsync sync</pre>
+          <pre>~/umbrel/scripts/app compose zeroq-plextraktsync exec plextraktsync plextraktsync sync</pre>
         </article>
 
         <article class="card">
           <h2>Config location</h2>
           <p>The persistent PlexTraktSync config is stored inside this Umbrel app's data folder.</p>
-          <pre>plextraktsync/data/config/config.yml</pre>
+          <pre>zeroq-plextraktsync/data/config/config.yml</pre>
           <p>The seeded config enables only:</p>
           <pre>sync:
   trakt_to_plex:
