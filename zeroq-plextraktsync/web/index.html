@@ -205,14 +205,20 @@
       }
 
       async function loadStatus() {
-        const res = await fetch('/api/status');
-        const data = await res.json();
-        setPill('plex-pill', data.configured.plex, data.configured.plex ? `Plex: ${data.env.PLEX_SERVER || 'configured'}` : 'Plex not configured');
-        setPill('trakt-pill', data.configured.trakt, data.configured.trakt ? `Trakt: ${data.env.TRAKT_USERNAME || 'configured'}` : 'Trakt not configured');
-        setPill('job-pill', data.job.running, data.job.running ? 'Sync running' : (data.job.message || 'Idle'));
-        if (!checksDirty) renderChecks(data.sync || {});
-        $('summary').innerHTML = `Plex server: <strong>${escapeHtml(data.env.PLEX_SERVER || 'not set')}</strong><br>Trakt user: <strong>${escapeHtml(data.env.TRAKT_USERNAME || 'not set')}</strong><br>Configured Plex servers: <strong>${data.servers.length}</strong>`;
-        $('logs').textContent = (data.logs.job || '') + '\n--- PlexTraktSync log ---\n' + (data.logs.plextraktsync || '');
+        try {
+          const res = await fetch('/api/status');
+          const data = await res.json();
+          setPill('plex-pill', data.configured.plex, data.configured.plex ? `Plex: ${data.env.PLEX_SERVER || 'configured'}` : 'Plex not configured');
+          setPill('trakt-pill', data.configured.trakt, data.configured.trakt ? `Trakt: ${data.env.TRAKT_USERNAME || 'configured'}` : 'Trakt not configured');
+          setPill('job-pill', data.job.running, data.job.running ? 'Sync running' : (data.job.message || 'Idle'));
+          if (!checksDirty) renderChecks(data.sync || {});
+          $('summary').innerHTML = `Plex server: <strong>${escapeHtml(data.env.PLEX_SERVER || 'not set')}</strong><br>Trakt user: <strong>${escapeHtml(data.env.TRAKT_USERNAME || 'not set')}</strong><br>Configured Plex servers: <strong>${data.servers.length}</strong>`;
+          $('logs').textContent = (data.logs.job || '') + '\n--- PlexTraktSync log ---\n' + (data.logs.plextraktsync || '');
+        } catch (e) {
+          setPill('job-pill', false, 'Setup API unavailable');
+          $('summary').textContent = 'The setup page loaded, but the PlexTraktSync API is not responding yet.';
+          $('logs').textContent = e.message;
+        }
       }
 
       async function saveManualPlex() {
