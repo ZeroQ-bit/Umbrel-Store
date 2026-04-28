@@ -3,213 +3,296 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>PlexTraktSync on Umbrel</title>
+    <title>PlexTraktSync Settings</title>
     <style>
       :root {
         color-scheme: dark;
-        --bg: #101418;
-        --panel: #171f26;
-        --panel-soft: #1f2a33;
-        --text: #f4f7f9;
-        --muted: #b7c2ca;
+        --bg: #0d1115;
+        --panel: #151c23;
+        --panel-2: #1b2630;
+        --text: #f5f7fa;
+        --muted: #aebbc7;
+        --line: #2b3a47;
         --accent: #ff5f3d;
-        --accent-2: #f7c948;
-        --line: #30404d;
+        --gold: #f7c948;
+        --green: #56d364;
+        --red: #ff6b6b;
+        --input: #0b0f13;
       }
-
-      * {
-        box-sizing: border-box;
-      }
-
+      * { box-sizing: border-box; }
       body {
         margin: 0;
         min-height: 100vh;
         background:
-          radial-gradient(circle at top left, rgba(255, 95, 61, 0.2), transparent 32rem),
-          radial-gradient(circle at bottom right, rgba(247, 201, 72, 0.14), transparent 28rem),
-          var(--bg);
+          radial-gradient(circle at 10% 0%, rgba(255, 95, 61, 0.2), transparent 32rem),
+          radial-gradient(circle at 90% 10%, rgba(247, 201, 72, 0.12), transparent 26rem),
+          linear-gradient(145deg, #0d1115, #101821 48%, #0d1115);
         color: var(--text);
-        font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-family: "Avenir Next", "Gill Sans", "Trebuchet MS", sans-serif;
       }
-
-      main {
-        width: min(960px, calc(100% - 32px));
-        margin: 0 auto;
-        padding: 56px 0;
-      }
-
-      .hero {
-        padding: 34px;
+      main { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 36px 0 64px; }
+      .hero, .card {
         border: 1px solid var(--line);
         border-radius: 28px;
-        background: linear-gradient(135deg, rgba(23, 31, 38, 0.96), rgba(31, 42, 51, 0.84));
-        box-shadow: 0 24px 90px rgba(0, 0, 0, 0.32);
+        background: linear-gradient(135deg, rgba(21, 28, 35, .96), rgba(27, 38, 48, .86));
+        box-shadow: 0 24px 90px rgba(0,0,0,.26);
       }
-
-      .eyebrow {
-        margin: 0 0 14px;
-        color: var(--accent-2);
-        font-size: 0.82rem;
-        font-weight: 800;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
+      .hero { padding: clamp(24px, 5vw, 46px); margin-bottom: 20px; }
+      .eyebrow { margin: 0 0 12px; color: var(--gold); font-size: .82rem; letter-spacing: .16em; text-transform: uppercase; font-weight: 900; }
+      h1 { margin: 0; max-width: 920px; font-size: clamp(2.4rem, 8vw, 5.6rem); line-height: .94; letter-spacing: -.07em; }
+      .lede { max-width: 820px; margin: 22px 0 0; color: var(--muted); font-size: 1.08rem; line-height: 1.75; }
+      .status-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+      .pill { display: inline-flex; gap: 9px; align-items: center; border: 1px solid var(--line); border-radius: 999px; padding: 9px 12px; background: rgba(255,255,255,.04); color: var(--muted); font-weight: 700; }
+      .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--red); box-shadow: 0 0 16px currentColor; }
+      .ok .dot { background: var(--green); }
+      .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 18px; }
+      .card { padding: 24px; }
+      .wide { grid-column: 1 / -1; }
+      h2 { margin: 0 0 6px; font-size: 1.18rem; letter-spacing: -.02em; }
+      .sub { color: var(--muted); line-height: 1.6; margin: 0 0 18px; }
+      label { display: block; color: #d8e0e7; font-weight: 800; font-size: .86rem; margin: 12px 0 7px; }
+      input, select {
+        width: 100%; border: 1px solid var(--line); border-radius: 14px; background: var(--input); color: var(--text);
+        padding: 13px 14px; font-size: 1rem; outline: none;
       }
-
-      h1 {
-        margin: 0;
-        max-width: 760px;
-        font-size: clamp(2.2rem, 7vw, 5rem);
-        line-height: 0.95;
-        letter-spacing: -0.07em;
+      input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,95,61,.14); }
+      .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      button {
+        border: 0; border-radius: 14px; background: var(--accent); color: #fff; padding: 13px 16px; font-weight: 900;
+        cursor: pointer; font-size: .96rem; margin-top: 14px;
       }
-
-      .lede {
-        max-width: 720px;
-        margin: 24px 0 0;
-        color: var(--muted);
-        font-size: 1.12rem;
-        line-height: 1.7;
-      }
-
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 16px;
-        margin-top: 22px;
-      }
-
-      .card {
-        padding: 22px;
-        border: 1px solid var(--line);
-        border-radius: 22px;
-        background: rgba(23, 31, 38, 0.82);
-      }
-
-      h2 {
-        margin: 0 0 12px;
-        font-size: 1rem;
-      }
-
-      p,
-      li {
-        color: var(--muted);
-        line-height: 1.65;
-      }
-
-      ol {
-        margin: 0;
-        padding-left: 1.25rem;
-      }
-
-      code,
-      pre {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-      }
-
-      pre {
-        overflow-x: auto;
-        margin: 12px 0 0;
-        padding: 16px;
-        border-radius: 16px;
-        background: #0a0d10;
-        color: #f8efe5;
-        line-height: 1.55;
-      }
-
-      .pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        margin-top: 20px;
-        padding: 10px 13px;
-        border: 1px solid rgba(255, 95, 61, 0.45);
-        border-radius: 999px;
-        color: var(--text);
-        background: rgba(255, 95, 61, 0.12);
-        font-size: 0.92rem;
-      }
-
-      .dot {
-        width: 9px;
-        height: 9px;
-        border-radius: 50%;
-        background: var(--accent);
-        box-shadow: 0 0 18px var(--accent);
-      }
-
-      a {
-        color: var(--accent-2);
-      }
-
-      @media (max-width: 760px) {
-        main {
-          padding: 24px 0;
-        }
-
-        .hero {
-          padding: 24px;
-          border-radius: 22px;
-        }
-
-        .grid {
-          grid-template-columns: 1fr;
-        }
-      }
+      button.secondary { background: #253341; color: var(--text); border: 1px solid var(--line); }
+      button.gold { background: var(--gold); color: #1b1604; }
+      button:disabled { opacity: .55; cursor: not-allowed; }
+      .message { min-height: 24px; margin-top: 12px; color: var(--muted); line-height: 1.5; }
+      .message.error { color: var(--red); }
+      .message.success { color: var(--green); }
+      .server-list { display: grid; gap: 10px; margin-top: 14px; }
+      .server-option { border: 1px solid var(--line); border-radius: 16px; padding: 14px; background: rgba(255,255,255,.035); }
+      .checks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+      .check { display: flex; align-items: flex-start; gap: 10px; border: 1px solid var(--line); border-radius: 16px; padding: 12px; background: rgba(255,255,255,.035); }
+      .check input { width: auto; margin-top: 3px; }
+      .check strong { display: block; }
+      .check span { display: block; color: var(--muted); font-size: .86rem; margin-top: 3px; line-height: 1.35; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 12px 0 0; max-height: 380px; overflow: auto; padding: 16px; border-radius: 16px; background: #070a0d; color: #d7e6ef; border: 1px solid #17222b; }
+      a { color: var(--gold); }
+      @media (max-width: 820px) { .grid, .two, .checks { grid-template-columns: 1fr; } .wide { grid-column: auto; } }
     </style>
   </head>
   <body>
     <main>
       <section class="hero">
-        <p class="eyebrow">PlexTraktSync for Umbrel</p>
-        <h1>Import Trakt Continue Watching into Plex.</h1>
-        <p class="lede">
-          This app runs PlexTraktSync with Trakt-to-Plex playback progress enabled by default. Ratings,
-          watchlists, collections, liked lists, and watched-status syncing are disabled until you edit the config.
-        </p>
-        <div class="pill"><span class="dot"></span> Runs one sync on app start after login</div>
+        <p class="eyebrow">PlexTraktSync Settings</p>
+        <h1>Set up Trakt to Plex without SSH.</h1>
+        <p class="lede">Connect Plex, authorize Trakt, choose exactly what syncs, and run the import from this page. Default mode is still the safe one: Trakt Continue Watching playback progress into Plex.</p>
+        <div class="status-row">
+          <span id="plex-pill" class="pill"><span class="dot"></span>Plex not configured</span>
+          <span id="trakt-pill" class="pill"><span class="dot"></span>Trakt not configured</span>
+          <span id="job-pill" class="pill"><span class="dot"></span>Idle</span>
+        </div>
       </section>
 
-      <section class="grid" aria-label="Setup instructions">
+      <section class="grid">
         <article class="card">
-          <h2>1. Connect Plex and Trakt</h2>
-          <ol>
-            <li>SSH into your Umbrel.</li>
-            <li>Run the login command below.</li>
-            <li>Follow the Plex and Trakt prompts.</li>
-          </ol>
-          <pre>~/umbrel/scripts/app compose zeroq-plextraktsync exec plextraktsync plextraktsync login</pre>
-          <p>If Plex is on this Umbrel, use <code>http://host.docker.internal:32400</code> when asked for the Plex server URL.</p>
+          <h2>Plex: URL + Token</h2>
+          <p class="sub">Fastest path. Use this if Plex is already claimed and you have a Plex token. For Plex on this Umbrel, the URL below is usually right.</p>
+          <div class="two">
+            <div><label>Plex server name</label><input id="plex-name" value="Plex" /></div>
+            <div><label>Plex username</label><input id="plex-username" placeholder="Optional" /></div>
+          </div>
+          <label>Plex URL</label><input id="plex-url" value="http://host.docker.internal:32400" />
+          <label>Plex token</label><input id="plex-token" type="password" autocomplete="off" placeholder="Paste your Plex token" />
+          <button onclick="saveManualPlex()">Test and Save Plex</button>
+          <p id="manual-msg" class="message"></p>
         </article>
 
         <article class="card">
-          <h2>2. Run the import</h2>
-          <p>Restart the app after login. PlexTraktSync will run <code>sync</code> once and then stay idle.</p>
-          <pre>~/umbrel/scripts/app restart zeroq-plextraktsync</pre>
-          <p>To sync again later, restart the app or run:</p>
-          <pre>~/umbrel/scripts/app compose zeroq-plextraktsync exec plextraktsync plextraktsync sync</pre>
+          <h2>Plex: Account Discovery</h2>
+          <p class="sub">Alternative path. Log in to Plex, choose a server, and we'll save the server token for PlexTraktSync.</p>
+          <label>Plex username or email</label><input id="discover-username" autocomplete="username" />
+          <label>Plex password</label><input id="discover-password" type="password" autocomplete="current-password" />
+          <label>2FA code</label><input id="discover-code" placeholder="Leave blank if not enabled" />
+          <button onclick="discoverPlex()">Discover Servers</button>
+          <div id="server-list" class="server-list"></div>
+          <p id="discover-msg" class="message"></p>
+        </article>
+
+        <article class="card wide">
+          <h2>Trakt Device Authorization</h2>
+          <p class="sub">Create a Trakt API app at <a href="https://trakt.tv/oauth/applications" target="_blank" rel="noreferrer">trakt.tv/oauth/applications</a>. Set redirect URL to <code>urn:ietf:wg:oauth:2.0:oob</code>, then paste the client ID and secret here.</p>
+          <div class="two">
+            <div><label>Trakt client ID</label><input id="trakt-client-id" /></div>
+            <div><label>Trakt client secret</label><input id="trakt-client-secret" type="password" /></div>
+          </div>
+          <button onclick="startTrakt()">Start Trakt Login</button>
+          <div id="trakt-auth" class="message"></div>
+        </article>
+
+        <article class="card wide">
+          <h2>Sync Settings</h2>
+          <p class="sub">Keep this narrow if your goal is only importing Trakt Continue Watching to Plex Continue Watching. Turn on extra sync directions only when you mean it.</p>
+          <div id="checks" class="checks"></div>
+          <button onclick="saveConfig()">Save Sync Settings</button>
+          <p id="config-msg" class="message"></p>
         </article>
 
         <article class="card">
-          <h2>Config location</h2>
-          <p>The persistent PlexTraktSync config is stored inside this Umbrel app's data folder.</p>
-          <pre>zeroq-plextraktsync/data/config/config.yml</pre>
-          <p>The seeded config enables only:</p>
-          <pre>sync:
-  trakt_to_plex:
-    playback_status: true</pre>
+          <h2>Run Import</h2>
+          <p class="sub">Runs <code>plextraktsync sync</code> using the settings above. Dry run checks what would happen without changing Plex.</p>
+          <button class="gold" onclick="runSync(false)">Run Sync Now</button>
+          <button class="secondary" onclick="runSync(true)">Dry Run</button>
+          <p id="sync-msg" class="message"></p>
         </article>
 
         <article class="card">
-          <h2>Upstream project</h2>
-          <p>
-            PlexTraktSync is maintained at
-            <a href="https://github.com/Taxel/PlexTraktSync">github.com/Taxel/PlexTraktSync</a>.
-          </p>
-          <p>
-            If you want full two-way syncing later, edit <code>config.yml</code> carefully and restart the app.
-          </p>
+          <h2>Current Setup</h2>
+          <p id="summary" class="sub">Loading...</p>
+        </article>
+
+        <article class="card wide">
+          <h2>Logs</h2>
+          <button class="secondary" onclick="loadStatus()">Refresh Logs</button>
+          <pre id="logs">Loading logs...</pre>
         </article>
       </section>
     </main>
+
+    <script>
+      const checks = [
+        ['trakt_to_plex.playback_status', 'Trakt playback progress to Plex', 'Continue Watching import. Recommended.'],
+        ['trakt_to_plex.watched_status', 'Trakt watched status to Plex', 'Marks Plex items watched if watched on Trakt.'],
+        ['trakt_to_plex.ratings', 'Trakt ratings to Plex', 'Copies Trakt ratings into Plex.'],
+        ['trakt_to_plex.watchlist', 'Trakt watchlist to Plex', 'Syncs Trakt watchlist into Plex watchlist.'],
+        ['trakt_to_plex.watchlist_as_playlist', 'Trakt watchlist as Plex playlist', 'Alternative playlist mode for Trakt watchlist.'],
+        ['trakt_to_plex.liked_lists', 'Trakt liked lists to Plex', 'Downloads liked lists and adds matching Plex items.'],
+        ['plex_to_trakt.watched_status', 'Plex watched status to Trakt', 'Uploads watched state from Plex to Trakt.'],
+        ['plex_to_trakt.ratings', 'Plex ratings to Trakt', 'Uploads Plex ratings to Trakt.'],
+        ['plex_to_trakt.watchlist', 'Plex watchlist to Trakt', 'Uploads Plex watchlist to Trakt.'],
+        ['plex_to_trakt.collection', 'Plex collection to Trakt', 'Adds Plex library items to Trakt collection.'],
+        ['plex_to_trakt.clear_collected', 'Clear missing Trakt collection items', 'Advanced: removes Trakt collected state for items not in Plex.'],
+      ];
+      let discoveryId = null;
+      let discoveredServers = [];
+      let checksDirty = false;
+      let traktSessionId = null;
+      let traktTimer = null;
+
+      function $(id) { return document.getElementById(id); }
+      function msg(id, text, type='') { const el = $(id); el.textContent = text || ''; el.className = 'message ' + type; }
+      function escapeHtml(value) {
+        return String(value || '').replace(/[&<>"']/g, char => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[char]));
+      }
+      async function api(path, body) {
+        const res = await fetch(path, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body || {})});
+        const data = await res.json();
+        if (!res.ok || data.ok === false) throw new Error(data.error || 'Request failed');
+        return data;
+      }
+      function setPill(id, ok, text) {
+        const el = $(id);
+        el.className = 'pill ' + (ok ? 'ok' : '');
+        el.textContent = '';
+        const dot = document.createElement('span');
+        dot.className = 'dot';
+        el.append(dot, document.createTextNode(text));
+      }
+      function nested(obj, dotted) { return dotted.split('.').reduce((v, k) => (v || {})[k], obj); }
+
+      function renderChecks(sync) {
+        $('checks').innerHTML = checks.map(([key, title, hint]) => `
+          <label class="check"><input type="checkbox" data-key="${key}" onchange="checksDirty = true" ${nested({sync}, 'sync.' + key) ? 'checked' : ''}/><span><strong>${title}</strong><span>${hint}</span></span></label>
+        `).join('');
+      }
+
+      async function loadStatus() {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        setPill('plex-pill', data.configured.plex, data.configured.plex ? `Plex: ${data.env.PLEX_SERVER || 'configured'}` : 'Plex not configured');
+        setPill('trakt-pill', data.configured.trakt, data.configured.trakt ? `Trakt: ${data.env.TRAKT_USERNAME || 'configured'}` : 'Trakt not configured');
+        setPill('job-pill', data.job.running, data.job.running ? 'Sync running' : (data.job.message || 'Idle'));
+        if (!checksDirty) renderChecks(data.sync || {});
+        $('summary').innerHTML = `Plex server: <strong>${escapeHtml(data.env.PLEX_SERVER || 'not set')}</strong><br>Trakt user: <strong>${escapeHtml(data.env.TRAKT_USERNAME || 'not set')}</strong><br>Configured Plex servers: <strong>${data.servers.length}</strong>`;
+        $('logs').textContent = (data.logs.job || '') + '\n--- PlexTraktSync log ---\n' + (data.logs.plextraktsync || '');
+      }
+
+      async function saveManualPlex() {
+        msg('manual-msg', 'Testing Plex connection...');
+        try {
+          await api('/api/plex/manual', {name: $('plex-name').value, username: $('plex-username').value, url: $('plex-url').value, token: $('plex-token').value});
+          msg('manual-msg', 'Plex saved successfully.', 'success');
+          $('plex-token').value = '';
+          await loadStatus();
+        } catch (e) { msg('manual-msg', e.message, 'error'); }
+      }
+
+      async function discoverPlex() {
+        msg('discover-msg', 'Logging into Plex and discovering servers...');
+        $('server-list').innerHTML = '';
+        try {
+          const data = await api('/api/plex/discover', {username: $('discover-username').value, password: $('discover-password').value, code: $('discover-code').value});
+          discoveryId = data.discovery_id;
+          discoveredServers = data.servers || [];
+          $('server-list').innerHTML = discoveredServers.map((s, index) => `
+            <div class="server-option"><strong>${escapeHtml(s.name)}</strong><br><span class="sub">${s.owned ? 'Owned' : 'Shared'} ${escapeHtml(s.platform)} ${escapeHtml(s.version)}</span><br><button class="secondary" onclick="saveDiscoveredPlex(${index})">Save this server</button></div>
+          `).join('') || '<p class="sub">No Plex servers found.</p>';
+          msg('discover-msg', 'Choose the Plex server to save.', 'success');
+        } catch (e) { msg('discover-msg', e.message, 'error'); }
+      }
+
+      async function saveDiscoveredPlex(index) {
+        msg('discover-msg', 'Saving selected Plex server...');
+        try {
+          const name = discoveredServers[index] && discoveredServers[index].name;
+          await api('/api/plex/save-discovered', {discovery_id: discoveryId, server: name});
+          msg('discover-msg', 'Plex server saved.', 'success');
+          $('discover-password').value = '';
+          await loadStatus();
+        } catch (e) { msg('discover-msg', e.message, 'error'); }
+      }
+
+      async function startTrakt() {
+        msg('trakt-auth', 'Requesting Trakt device code...');
+        try {
+          const data = await api('/api/trakt/start', {client_id: $('trakt-client-id').value, client_secret: $('trakt-client-secret').value});
+          traktSessionId = data.session_id;
+          const url = escapeHtml(data.verification_url);
+          $('trakt-auth').innerHTML = `Open <a href="${url}" target="_blank" rel="noreferrer">${url}</a> and enter code <strong>${escapeHtml(data.user_code)}</strong>. Waiting for approval...`;
+          clearInterval(traktTimer);
+          traktTimer = setInterval(pollTrakt, Math.max(5000, (data.interval || 5) * 1000));
+        } catch (e) { msg('trakt-auth', e.message, 'error'); }
+      }
+
+      async function pollTrakt() {
+        if (!traktSessionId) return;
+        try {
+          const data = await api('/api/trakt/poll', {session_id: traktSessionId});
+          if (data.pending) return;
+          clearInterval(traktTimer);
+          $('trakt-client-secret').value = '';
+          msg('trakt-auth', `Trakt saved for ${data.username}.`, 'success');
+          await loadStatus();
+        } catch (e) {
+          clearInterval(traktTimer);
+          msg('trakt-auth', e.message, 'error');
+        }
+      }
+
+      async function saveConfig() {
+        const flags = {};
+        document.querySelectorAll('[data-key]').forEach(input => flags[input.dataset.key] = input.checked);
+        msg('config-msg', 'Saving sync settings...');
+        try { await api('/api/config', {flags}); checksDirty = false; msg('config-msg', 'Sync settings saved.', 'success'); await loadStatus(); }
+        catch (e) { msg('config-msg', e.message, 'error'); }
+      }
+
+      async function runSync(dryRun) {
+        msg('sync-msg', dryRun ? 'Starting dry run...' : 'Starting sync...');
+        try { await api('/api/sync', {dry_run: dryRun}); msg('sync-msg', 'Started. Watch logs below.', 'success'); setTimeout(loadStatus, 1000); }
+        catch (e) { msg('sync-msg', e.message, 'error'); }
+      }
+
+      loadStatus();
+      setInterval(loadStatus, 7000);
+    </script>
   </body>
 </html>

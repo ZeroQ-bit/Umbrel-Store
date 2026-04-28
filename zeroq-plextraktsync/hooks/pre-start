@@ -37,5 +37,5 @@ PLEX_ACCOUNT_TOKEN=
 ENV
 fi
 
-touch "${CONFIG_DIR}/plextraktsync.log"
+touch "${CONFIG_DIR}/plextraktsync.log" "${CONFIG_DIR}/web-sync.log"
 chown -R 1000:1000 "${CONFIG_DIR}"

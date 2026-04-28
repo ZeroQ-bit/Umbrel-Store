@@ -2,29 +2,20 @@ manifestVersion: 1.1
 id: zeroq-plextraktsync
 category: media
 name: PlexTraktSync
-version: "0.35.5"
+version: "0.35.5.1"
 tagline: Sync Trakt watch progress to Plex
 icon: https://raw.githubusercontent.com/Taxel/PlexTraktSync/main/trakt.ico
 description: >-
   PlexTraktSync syncs media state between trakt.tv and Plex Media Server without requiring Plex Pass or Trakt VIP.
 
 
-  This ZeroQ package is configured for a narrow, safer first-run workflow: importing your Trakt Continue Watching playback progress into Plex Continue Watching. The default config enables `trakt_to_plex.playback_status` and disables ratings, watchlists, collections, liked lists, and watched-status syncing until you opt into them yourself.
+  This ZeroQ package includes a browser-based setup page so you can connect Plex, authorize Trakt, choose sync options, and run an import without SSH. The default config enables `trakt_to_plex.playback_status` and disables ratings, watchlists, collections, liked lists, and watched-status syncing until you opt into them.
 
 
-  SET-UP INSTRUCTIONS
+  Open the app after install, add your Plex server/token or discover Plex from your Plex account, authorize Trakt with a Trakt API app, then press Run Sync Now.
 
 
-  1. Install the app.
-
-  2. Open the app page for setup notes.
-
-  3. SSH into Umbrel and run the login command shown on the app page to connect Plex and Trakt.
-
-  4. Restart the app to run the first playback-progress import.
-
-
-  If Plex is running on the same Umbrel, use `http://host.docker.internal:32400` as the Plex server URL when prompted.
+  If Plex is running on the same Umbrel, `http://host.docker.internal:32400` is usually the right Plex server URL.
 developer: Taxel and PlexTraktSync contributors
 website: https://github.com/Taxel/PlexTraktSync
 dependencies: []
@@ -38,6 +29,6 @@ defaultPassword: ""
 torOnly: false
 permissions: []
 releaseNotes: >-
-  Initial ZeroQ custom store package for PlexTraktSync 0.35.5. It seeds a playback-progress-only config for importing Trakt Continue Watching into Plex Continue Watching and includes a small Umbrel instruction page.
+  Adds a browser setup UI for Plex and Trakt login, sync setting toggles, one-click dry runs, one-click sync runs, and logs. SSH setup commands are no longer required for the normal workflow.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store/pull/2
