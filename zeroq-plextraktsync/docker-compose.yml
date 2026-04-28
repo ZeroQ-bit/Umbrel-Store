@@ -1,11 +1,6 @@
 version: "3.7"
 
 services:
-  app_proxy:
-    environment:
-      APP_HOST: zeroq-plextraktsync_web_1
-      APP_PORT: 80
-
   web:
     image: nginx:1.27@sha256:124b44bfc9ccd1f3cedf4b592d4d1e8bddb78b51ec2ed5056c52d3692baebc19
     command:
@@ -40,6 +35,8 @@ services:
         NGINX
         exec nginx -g 'daemon off;'
     restart: on-failure
+    ports:
+      - "3490:80"
     volumes:
       - ${APP_DATA_DIR}/web:/usr/share/nginx/html:ro
 
