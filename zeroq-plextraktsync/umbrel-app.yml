@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-plextraktsync
 category: media
 name: PlexTraktSync
-version: "0.35.5.1"
+version: "0.35.5.2"
 tagline: Sync Trakt watch progress to Plex
 icon: https://raw.githubusercontent.com/Taxel/PlexTraktSync/main/trakt.ico
 description: >-
@@ -29,6 +29,6 @@ defaultPassword: ""
 torOnly: false
 permissions: []
 releaseNotes: >-
-  Adds a browser setup UI for Plex and Trakt login, sync setting toggles, one-click dry runs, one-click sync runs, and logs. SSH setup commands are no longer required for the normal workflow.
+  Fixes setup UI startup on app updates by moving bundled web files out of persistent data storage. Includes browser setup for Plex and Trakt login, sync setting toggles, one-click dry runs, one-click sync runs, and logs.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store/pull/2
