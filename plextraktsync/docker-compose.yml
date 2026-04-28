@@ -29,7 +29,7 @@ services:
 
         echo "PlexTraktSync sync completed. Restart the app or run 'plextraktsync sync' inside the container to sync again." | tee -a /app/config/plextraktsync.log
         tail -f /dev/null
-    restart: on-failure:2
+    restart: on-failure
     stdin_open: true
     tty: true
     volumes:
