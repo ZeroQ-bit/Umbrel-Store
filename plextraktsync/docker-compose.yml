@@ -1,0 +1,48 @@
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: plextraktsync_web_1
+      APP_PORT: 80
+
+  plextraktsync:
+    image: ghcr.io/taxel/plextraktsync:0.35.5@sha256:de61cbdeeb242ed32efb2e16ed18cec6920098c0dc612e83ac68b93f01294b8a
+    command:
+      - sh
+      - -c
+      - |
+        touch /app/config/plextraktsync.log
+        if [ ! -s /app/config/.pytrakt.json ] || [ ! -s /app/config/servers.yml ]; then
+          {
+            echo "PlexTraktSync is installed but not logged in yet."
+            echo "Run 'plextraktsync login' inside this container, then restart the app to import Trakt playback progress into Plex."
+          } | tee -a /app/config/plextraktsync.log
+          tail -f /dev/null
+        fi
+
+        plextraktsync sync
+        status=$?
+        if [ "$status" -ne 0 ]; then
+          exit "$status"
+        fi
+
+        echo "PlexTraktSync sync completed. Restart the app or run 'plextraktsync sync' inside the container to sync again." | tee -a /app/config/plextraktsync.log
+        tail -f /dev/null
+    restart: on-failure:2
+    stdin_open: true
+    tty: true
+    volumes:
+      - ${APP_DATA_DIR}/data/config:/app/config
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Australia/Perth
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  web:
+    image: nginx:1.27@sha256:124b44bfc9ccd1f3cedf4b592d4d1e8bddb78b51ec2ed5056c52d3692baebc19
+    restart: on-failure
+    volumes:
+      - ${APP_DATA_DIR}/data/web:/usr/share/nginx/html:ro

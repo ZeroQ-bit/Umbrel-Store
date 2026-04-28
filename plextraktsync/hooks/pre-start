@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP_DIR="$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")"
+CONFIG_DIR="${APP_DIR}/data/config"
+WEB_DIR="${APP_DIR}/data/web"
+
+mkdir -p "${CONFIG_DIR}" "${WEB_DIR}"
+
+if [[ ! -f "${CONFIG_DIR}/config.yml" ]]; then
+  cat > "${CONFIG_DIR}/config.yml" <<'YAML'
+sync:
+  plex_to_trakt:
+    collection: false
+    clear_collected: false
+    ratings: false
+    watched_status: false
+    watchlist: false
+  trakt_to_plex:
+    liked_lists: false
+    ratings: false
+    watched_status: false
+    watchlist: false
+    watchlist_as_playlist: false
+    playback_status: true
+YAML
+fi
+
+if [[ ! -f "${CONFIG_DIR}/.env" ]]; then
+  cat > "${CONFIG_DIR}/.env" <<'ENV'
+# This is .env file for PlexTraktSync
+PLEX_USERNAME=
+TRAKT_USERNAME=
+PLEX_SERVER=
+PLEX_OWNER_TOKEN=
+PLEX_ACCOUNT_TOKEN=
+ENV
+fi
+
+touch "${CONFIG_DIR}/plextraktsync.log"
+chown -R 1000:1000 "${CONFIG_DIR}"
