@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: StreamArr Pro
-version: "main-39fc01a"
+version: "main-39fc01a-mounts1"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/StreamArr-Pro/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,7 +29,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Updates Plex export naming so movie folders use the tmdb suffix format and show folders use the tvdb suffix format, matching setups like Riven more closely. Example output now follows patterns like `Roommates (2026) {tmdb-1511057}` and `Robin Hood (2025) {tvdb-454834}`.
+  Fixes the Umbrel package so StreamArr can actually see the shared Riven mount paths. The app container now mounts the same shared storage at `/mount` and `/mnt/rd`, which unblocks Plex export reads and symlink writes alongside the tmdb/tvdb naming update.
 torOnly: false
 permissions: []
 submitter: ZeroQ

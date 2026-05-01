@@ -20,6 +20,8 @@ services:
     volumes:
       - ${APP_DATA_DIR}/data/cache:/app/cache
       - ${APP_DATA_DIR}/data/logs:/app/logs
+      - ${UMBREL_ROOT}/data/storage/downloads/riven:/mount:rshared
+      - ${UMBREL_ROOT}/data/storage/downloads/riven:/mnt/rd:rshared
     depends_on:
       postgres:
         condition: service_healthy
