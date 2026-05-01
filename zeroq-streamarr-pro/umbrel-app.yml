@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: StreamArr Pro
-version: "main-831c10a-mounts1"
+version: "main-e88e267-mounts1"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/StreamArr-Pro/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,7 +29,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Adds a manual Real-Debrid Library Sync service in Settings > Services, so you can explicitly push cached streams into Real-Debrid before running Plex Export. This build keeps the detailed Plex export diagnostics, plus the earlier shared mount-path and NULL `rd_torrent_id` fixes.
+  Fixes Real-Debrid library sync so magnet links are sent as properly encoded form data instead of tripping `wrong_parameter` errors. It also pauses the sync cleanly when Real-Debrid rate-limits instead of blasting through the whole batch.
 torOnly: false
 permissions: []
 submitter: ZeroQ
