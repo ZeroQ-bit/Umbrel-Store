@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: StreamArr Pro
-version: "main-1646f45"
+version: "main-39fc01a"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/StreamArr-Pro/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,7 +29,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Adds a Plex export pipeline for Umbrel deployments. StreamArr can now track Real-Debrid library items, export cached media into Plex-visible paths, and expose the new Plex export settings in the app so Plex can pick up media the way your Riven setup used to.
+  Updates Plex export naming so movie folders use the tmdb suffix format and show folders use the tvdb suffix format, matching setups like Riven more closely. Example output now follows patterns like `Roommates (2026) {tmdb-1511057}` and `Robin Hood (2025) {tvdb-454834}`.
 torOnly: false
 permissions: []
 submitter: ZeroQ
