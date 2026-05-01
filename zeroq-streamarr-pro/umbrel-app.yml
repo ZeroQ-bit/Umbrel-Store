@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: StreamArr Pro
-version: "main-4966069"
+version: "main-1646f45"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/StreamArr-Pro/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,7 +29,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Fixes the background cache scanner so it refreshes to your saved provider list instead of holding onto the startup fallback set, which removes unexpected Comet results after configuring Torrentio. Also fixes cached stream writes against the upgraded media_streams schema by populating media_type and media_id again.
+  Adds a Plex export pipeline for Umbrel deployments. StreamArr can now track Real-Debrid library items, export cached media into Plex-visible paths, and expose the new Plex export settings in the app so Plex can pick up media the way your Riven setup used to.
 torOnly: false
 permissions: []
 submitter: ZeroQ
