@@ -8,9 +8,15 @@ services:
       PROXY_AUTH_ADD: "false"
 
   server:
-    image: ghcr.io/zeroq-bit/streamarr-pro:main-e3f0ce4@sha256:9fa811b86709dee71e638276a664399a2a174cf6c0f4434cb7feccd5aafa245c
+    image: ghcr.io/zeroq-bit/streamarr-pro:main-1325621@sha256:97452f118861b739d02df87550c9b5a2c4b1e0ef01019cd9e0530a86a50a9881
     restart: on-failure
     stop_grace_period: 1m
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    devices:
+      - /dev/fuse
     environment:
       DATABASE_URL: postgres://streamarr:streamarr@postgres:5432/streamarr?sslmode=disable
       JWT_SECRET: ${APP_SEED}
@@ -20,8 +26,7 @@ services:
     volumes:
       - ${APP_DATA_DIR}/data/cache:/app/cache
       - ${APP_DATA_DIR}/data/logs:/app/logs
-      - ${UMBREL_ROOT}/data/storage/downloads/riven:/mount:rshared
-      - ${UMBREL_ROOT}/data/storage/downloads/riven:/mnt/rd:rshared
+      - ${UMBREL_ROOT}/data/storage/downloads/riven:/mount
     depends_on:
       postgres:
         condition: service_healthy

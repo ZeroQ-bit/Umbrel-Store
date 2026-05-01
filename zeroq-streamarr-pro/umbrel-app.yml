@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: StreamArr Pro
-version: "main-e3f0ce4-mounts1"
+version: "main-1325621-mounts1"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/StreamArr-Pro/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,7 +29,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Adds deeper Plex export diagnostics for Umbrel mount troubleshooting: StreamArr now checks both `/mnt/rd` and `/mount` for Real-Debrid source files and logs the top-level entries it actually sees when no match is found. This helps distinguish a bad filename match from a mount-path or propagation problem.
+  StreamArr now owns the Real-Debrid mount inside its own app container on Umbrel, so Plex Export no longer depends on the separate Riven app being installed or running. The export mount stays writable for Plex-visible symlinks, while the RD library mount is handled internally with Zurg + rclone.
 torOnly: false
 permissions: []
 submitter: ZeroQ
