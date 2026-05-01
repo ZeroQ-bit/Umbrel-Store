@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: StreamArr Pro
-version: "main-39fc01a-mounts1"
+version: "main-04b56d1-mounts1"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/StreamArr-Pro/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,7 +29,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Fixes the Umbrel package so StreamArr can actually see the shared Riven mount paths. The app container now mounts the same shared storage at `/mount` and `/mnt/rd`, which unblocks Plex export reads and symlink writes alongside the tmdb/tvdb naming update.
+  Includes the shared mount-path fix and a backend fix for cached stream rows with NULL `rd_torrent_id` values, which was breaking cache/export scans on existing databases. This should let Plex export progress past those rows instead of quietly stalling.
 torOnly: false
 permissions: []
 submitter: ZeroQ
