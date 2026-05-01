@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: StreamArr Pro
-version: "main-83f6440-mounts1"
+version: "main-60a8d6d-mounts1"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/StreamArr-Pro/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,7 +29,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Recovers valid torrent hashes from saved stream URLs when older cache rows contain malformed `stream_hash` values. This lets the manual Real-Debrid Library Sync salvage existing cached items instead of repeatedly failing with `wrong_parameter` on bad legacy hashes.
+  Improves Plex export source matching under the mounted Real-Debrid filesystem by using media title and year hints instead of relying on an exact torrent-name match. This targets the remaining export failure where items reach the Real-Debrid library successfully but StreamArr cannot locate the mounted file to symlink into Plex.
 torOnly: false
 permissions: []
 submitter: ZeroQ
