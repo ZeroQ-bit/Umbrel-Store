@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-plex
 category: media
 name: Plex (StreamArr)
-version: "1.43.1.10611.3"
+version: "1.43.1.10611.2"
 tagline: Stream Movies & TV Shows
 icon: https://avatars.githubusercontent.com/u/11744877?v=4
 description: >-
