@@ -219,6 +219,37 @@ If we (for example) wanted to share BTC RPC Explorer's Address API with other ap
 export APP_BTC_RPC_EXPLORER_ADDRESS_API="electrumx"
 ```
 
+## Auto-updating app versions in this store
+
+This repo includes a scheduled GitHub Action at `.github/workflows/auto-update-apps.yml` plus a small updater script at `scripts/update_store_apps.py`.
+
+The updater:
+
+- checks configured upstream sources for newer app versions
+- refreshes the pinned Docker image tag and sha256 digest in each app's `docker-compose.yml`
+- updates the matching `version:` field in each app's `umbrel-app.yml`
+- commits the change back to `master` so Umbrel sees a newer store version
+
+The tracked apps and their update rules live in `scripts/store-update-config.json`.
+
+Current sources:
+
+- `zeroq-streamarr-pro`: latest commit on `ZeroQ-bit/StreamArr-Pro` `main`, mapped to `ghcr.io/zeroq-bit/streamarr-pro:main-<sha7>`
+- `zeroq-plex`: latest matching LinuxServer Plex Docker Hub tag and digest
+- `zeroq-plextraktsync`: latest Git tag from `Taxel/PlexTraktSync` and matching GHCR digest
+
+To test locally without changing files:
+
+```sh
+python3 scripts/update_store_apps.py
+```
+
+To write changes locally:
+
+```sh
+python3 scripts/update_store_apps.py --write
+```
+
 4\. For our app, we'll update `<docker-image>` with `getumbrel/btc-rpc-explorer`, `<tag>` with `v2.0.2`, `<digest>` with `f8ba8b97e550f65e5bc935d7516cce7172910e9009f3154a434c7baf55e82a2b`, and `<port>` with `3002`. Since BTC RPC Explorer doesn't need to store any persistent data and doesn't require access to Bitcoin Core's or LND's data directories, we can remove the entire `volumes` block.
 
 > The digest is a unique, immutable identifier for the Docker image. This will supersede the tag in the `docker-compose.yml` file. The reason we want to pull an image by its digest, is that we are guaranteed to get the exact same image every time, and this image will be the same image that was tested and verified to work on umbrelOS. It is important to make sure that this digest is the multi-architecture digest, and not the digest for a specific architecture.

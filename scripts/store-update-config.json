@@ -1,0 +1,73 @@
+{
+  "apps": [
+    {
+      "id": "zeroq-streamarr-pro",
+      "manifest_path": "zeroq-streamarr-pro/umbrel-app.yml",
+      "manifest_version_format": "{tag}-mounts1",
+      "manifest_version_source": {
+        "type": "github_branch_head",
+        "repo": "ZeroQ-bit/StreamArr-Pro",
+        "branch": "main",
+        "tag_format": "main-{sha7}"
+      },
+      "images": [
+        {
+          "compose_path": "zeroq-streamarr-pro/docker-compose.yml",
+          "repository": "ghcr.io/zeroq-bit/streamarr-pro",
+          "source": {
+            "type": "github_branch_head",
+            "repo": "ZeroQ-bit/StreamArr-Pro",
+            "branch": "main",
+            "tag_format": "main-{sha7}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "zeroq-plex",
+      "manifest_path": "zeroq-plex/umbrel-app.yml",
+      "manifest_version_format": "{version_core}.2",
+      "manifest_version_source": {
+        "type": "dockerhub_latest_tag",
+        "repository": "linuxserver/plex",
+        "tag_regex": "^(?P<version_core>\\d+\\.\\d+\\.\\d+\\.\\d+)-(?P<build_id>[A-Za-z0-9]+)-ls(?P<ls_build>\\d+)$",
+        "sort": "plex_lsio"
+      },
+      "images": [
+        {
+          "compose_path": "zeroq-plex/docker-compose.yml",
+          "repository": "linuxserver/plex",
+          "source": {
+            "type": "dockerhub_latest_tag",
+            "repository": "linuxserver/plex",
+            "tag_regex": "^(?P<version_core>\\d+\\.\\d+\\.\\d+\\.\\d+)-(?P<build_id>[A-Za-z0-9]+)-ls(?P<ls_build>\\d+)$",
+            "sort": "plex_lsio"
+          }
+        }
+      ]
+    },
+    {
+      "id": "zeroq-plextraktsync",
+      "manifest_path": "zeroq-plextraktsync/umbrel-app.yml",
+      "manifest_version_format": "{tag}.7",
+      "manifest_version_source": {
+        "type": "github_latest_tag",
+        "repo": "Taxel/PlexTraktSync",
+        "tag_regex": "^\\d+\\.\\d+\\.\\d+$",
+        "sort": "semver"
+      },
+      "images": [
+        {
+          "compose_path": "zeroq-plextraktsync/docker-compose.yml",
+          "repository": "ghcr.io/taxel/plextraktsync",
+          "source": {
+            "type": "github_latest_tag",
+            "repo": "Taxel/PlexTraktSync",
+            "tag_regex": "^\\d+\\.\\d+\\.\\d+$",
+            "sort": "semver"
+          }
+        }
+      ]
+    }
+  ]
+}
