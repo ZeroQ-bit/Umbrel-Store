@@ -8,7 +8,7 @@ services:
       PROXY_AUTH_ADD: "false"
 
   server:
-    image: ghcr.io/zeroq-bit/streamarr-pro:main-70ba9e7@sha256:04706acc0595d9348a19374f5e92c3c8da6df29ff71ff9d9d5bf76e730df7249
+    image: ghcr.io/zeroq-bit/streamarr-pro:main-8ae6338@sha256:a97991aa6e21f764c810d608d0d13552935964dd5b8852f3c340ea6ec7ff49f0
     restart: on-failure
     stop_grace_period: 1m
     environment:

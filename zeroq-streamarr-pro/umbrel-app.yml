@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: StreamArr Pro
-version: "main-70ba9e7-no-plex"
+version: "main-8ae6338-dmm-import"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/StreamArr-Pro/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,7 +29,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Removes StreamArr's Plex export and Real-Debrid mount worker. StreamArr now focuses on IPTV, cached stream discovery, and Real-Debrid library sync; use Riven for Plex-visible filesystem libraries.
+  Adds DMM full library import. StreamArr can now scan public DMM hashlists in batches, verify hashes against Real-Debrid, apply your content and release exclusions, match high-confidence movies and series to TMDB, and store playable cached hashes for IPTV availability filters.
 torOnly: false
 permissions: []
 submitter: ZeroQ
