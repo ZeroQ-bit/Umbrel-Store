@@ -40,7 +40,7 @@ services:
         condition: service_healthy
 
   frontend:
-    image: spoked/riven-frontend:sha-3c92981@sha256:14f43d3043d15e8fbd24d735f1771f94d85b52674afd62b5079ce843a41c3e45
+    image: ghcr.io/zeroq-bit/riven-frontend:sha-85c441d@sha256:5b235715e63b01376b376882236a44d071e9225d88fe6b588315cb99cade36c7
     restart: on-failure
     stop_grace_period: 1m
     user: "1000:1000"
