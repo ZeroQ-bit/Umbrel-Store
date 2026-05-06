@@ -3,9 +3,18 @@ version: "3.7"
 services:
   app_proxy:
     environment:
-      APP_HOST: zeroq-riven-ts-server
+      APP_HOST: zeroq-riven-ts_server_1
       APP_PORT: 8080
       PROXY_AUTH_ADD: "false"
+
+  mount-preflight:
+    image: alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc
+    restart: "no"
+    user: "0:0"
+    command: sh -c "mkdir -p /app/data/logs /mount && chown -R 1000:1000 /app/data /mount"
+    volumes:
+      - ${APP_DATA_DIR}/data/riven:/app/data
+      - ${UMBREL_ROOT}/data/storage/downloads/riven-ts:/mount:rshared
 
   server:
     image: ghcr.io/rivenmedia/riven-ts:main@sha256:15e3c08658e6751dcab75875d9acc7c8477982772272d859a48bf2ba00bdaea0
@@ -29,10 +38,13 @@ services:
       RIVEN_SETTING__unsafeWipeRedisOnStartup: "false"
       RIVEN_SETTING__unsafeWipeDatabaseOnStartup: "false"
       RIVEN_SETTING__enabledPlugins: "[]"
+      RIVEN_PLUGIN_SETTING__REPO_PLUGIN_TMDB__apiKey: "riven-ts-umbrel-placeholder"
     volumes:
       - ${APP_DATA_DIR}/data/riven:/app/data
       - ${UMBREL_ROOT}/data/storage/downloads/riven-ts:/mount:rshared
     depends_on:
+      mount-preflight:
+        condition: service_completed_successfully
       zeroq-riven-ts-postgres:
         condition: service_healthy
       zeroq-riven-ts-cache:

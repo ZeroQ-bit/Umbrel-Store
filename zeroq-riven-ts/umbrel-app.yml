@@ -4,7 +4,7 @@ name: Riven TS
 tagline: Experimental TypeScript Riven backend
 icon: https://avatars.githubusercontent.com/u/172203452?v=4
 category: media
-version: "main-6672733"
+version: "main-6672733-umbrel1"
 port: 8097
 description: >-
   Riven TS is the experimental TypeScript rewrite of Riven. This package is for testing the backend on Umbrel with Postgres, Redis, and FUSE enabled.
@@ -31,7 +31,7 @@ repo: https://github.com/rivenmedia/riven-ts
 support: https://github.com/rivenmedia/riven-ts/issues
 gallery: []
 releaseNotes: >-
-  Adds an isolated experimental Riven TS test package with its own Postgres, Redis, and FUSE mount.
+  Fixes the initial Umbrel test startup by providing required bootstrap plugin settings, preparing the FUSE mount ownership before the backend starts, and pointing the app proxy at the generated container DNS name.
 dependencies: []
 path: ""
 defaultUsername: ""
