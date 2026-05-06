@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: StreamArr Pro
-version: "main-a8b67a4-mounts1"
+version: "main-daa9b5b-mounts1"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/StreamArr-Pro/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,7 +29,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Fixes series caching so StreamArr scans every monitored, already aired episode instead of only using S01E01 as a sample. Cached episode streams can now be added to Real-Debrid and exported to Plex across the whole series.
+  Makes Plex Export refresh stale or mismatched symlinks before removing old exports, reducing add/remove churn in Plex while Real-Debrid/Zurg paths settle.
 torOnly: false
 permissions: []
 submitter: ZeroQ
