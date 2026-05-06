@@ -3,7 +3,7 @@ version: "3.7"
 services:
   app_proxy:
     environment:
-      APP_HOST: frontend
+      APP_HOST: zeroq-riven_frontend_1
       APP_PORT: 3000
       PROXY_AUTH_ADD: "false"
 
@@ -47,7 +47,7 @@ services:
     user: "1000:1000"
     environment:
       TZ: Etc/UTC
-      BACKEND_URL: "http://server:8080"
+      BACKEND_URL: "http://zeroq-riven_server_1:8080"
       BACKEND_API_KEY: "0123456789abcdef0123456789abcdef"
       DATABASE_URL: "/riven/data/riven.db"
       AUTH_SECRET: "${APP_SEED}"
