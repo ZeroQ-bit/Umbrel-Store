@@ -1,0 +1,40 @@
+manifestVersion: 1.1
+id: zeroq-riven-ts
+name: Riven TS
+tagline: Experimental TypeScript Riven backend
+icon: https://avatars.githubusercontent.com/u/172203452?v=4
+category: media
+version: "main-6672733"
+port: 8097
+description: >-
+  Riven TS is the experimental TypeScript rewrite of Riven. This package is for testing the backend on Umbrel with Postgres, Redis, and FUSE enabled.
+
+
+  IMPORTANT
+
+
+  Riven TS is not a replacement for the stable Riven app yet. It currently exposes the GraphQL backend directly and may not have a complete user-facing web UI.
+
+
+  SET-UP INSTRUCTIONS
+
+
+  1. Install Riven TS and open the app.
+  2. Confirm the GraphQL server loads.
+  3. Watch the app logs for startup or FUSE errors.
+  4. Keep your stable Riven app installed until this test app proves useful.
+developer: Riven Media
+website: https://github.com/rivenmedia/riven-ts
+submitter: ZeroQ
+submission: https://github.com/ZeroQ-bit/Umbrel-Store/pull/2
+repo: https://github.com/rivenmedia/riven-ts
+support: https://github.com/rivenmedia/riven-ts/issues
+gallery: []
+releaseNotes: >-
+  Adds an isolated experimental Riven TS test package with its own Postgres, Redis, and FUSE mount.
+dependencies: []
+path: ""
+defaultUsername: ""
+defaultPassword: ""
+permissions:
+  - STORAGE_DOWNLOADS

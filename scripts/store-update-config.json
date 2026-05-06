@@ -68,6 +68,29 @@
           }
         }
       ]
+    },
+    {
+      "id": "zeroq-riven-ts",
+      "manifest_path": "zeroq-riven-ts/umbrel-app.yml",
+      "manifest_version_format": "{tag}",
+      "manifest_version_source": {
+        "type": "github_branch_head",
+        "repo": "rivenmedia/riven-ts",
+        "branch": "main",
+        "tag_format": "main-{sha7}"
+      },
+      "images": [
+        {
+          "compose_path": "zeroq-riven-ts/docker-compose.yml",
+          "repository": "ghcr.io/rivenmedia/riven-ts",
+          "source": {
+            "type": "github_branch_head",
+            "repo": "rivenmedia/riven-ts",
+            "branch": "main",
+            "tag_format": "main"
+          }
+        }
+      ]
     }
   ]
 }

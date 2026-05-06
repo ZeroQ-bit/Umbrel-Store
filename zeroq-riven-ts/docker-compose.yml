@@ -1,0 +1,81 @@
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: zeroq-riven-ts-server
+      APP_PORT: 8080
+      PROXY_AUTH_ADD: "false"
+
+  server:
+    image: ghcr.io/rivenmedia/riven-ts:main@sha256:15e3c08658e6751dcab75875d9acc7c8477982772272d859a48bf2ba00bdaea0
+    restart: on-failure
+    stop_grace_period: 1m
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    devices:
+      - /dev/fuse
+    environment:
+      TZ: Etc/UTC
+      SENTRY_SPOTLIGHT: "0"
+      RIVEN_SETTING__databaseUrl: "postgresql://postgres:postgres@zeroq-riven-ts-postgres:5432/riven"
+      RIVEN_SETTING__redisUrl: "redis://zeroq-riven-ts-cache:6379"
+      RIVEN_SETTING__vfsMountPath: "/mount"
+      RIVEN_SETTING__gqlPort: "8080"
+      RIVEN_SETTING__logDirectory: "/app/data/logs"
+      RIVEN_SETTING__logLevel: "info"
+      RIVEN_SETTING__unsafeWipeRedisOnStartup: "false"
+      RIVEN_SETTING__unsafeWipeDatabaseOnStartup: "false"
+      RIVEN_SETTING__enabledPlugins: "[]"
+    volumes:
+      - ${APP_DATA_DIR}/data/riven:/app/data
+      - ${UMBREL_ROOT}/data/storage/downloads/riven-ts:/mount:rshared
+    depends_on:
+      zeroq-riven-ts-postgres:
+        condition: service_healthy
+      zeroq-riven-ts-cache:
+        condition: service_healthy
+    networks:
+      default:
+        aliases:
+          - zeroq-riven-ts-server
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://localhost:8080/', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ query: 'query { __typename }' }) }).then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\"",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  zeroq-riven-ts-postgres:
+    image: postgres:17-alpine@sha256:778d0b486d6daa02b77434d0358ec57a1b21fd8b6d22ac2eef56a33e816928f6
+    restart: on-failure
+    stop_grace_period: 1m
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: riven
+    volumes:
+      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data/pgdata
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d riven"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  zeroq-riven-ts-cache:
+    image: redis:7-alpine
+    restart: on-failure
+    stop_grace_period: 1m
+    command: redis-server --maxmemory-policy noeviction --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
