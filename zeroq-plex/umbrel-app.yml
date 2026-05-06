@@ -1,8 +1,8 @@
 manifestVersion: 1
 id: zeroq-plex
 category: media
-name: Plex (StreamArr)
-version: "1.43.1.10611.2"
+name: Plex (Riven)
+version: "1.43.1.10611.3"
 tagline: Stream Movies & TV Shows
 icon: https://avatars.githubusercontent.com/u/11744877?v=4
 description: >-
@@ -12,15 +12,18 @@ description: >-
   Plex uses a server to house your media library and player apps to playback the media. Add, access, and share all the entertainment that matters to you, on almost any device.
 
 
-  This ZeroQ package is intended to replace the stock Umbrel Plex app when you want persistent StreamArr integration. It includes a dedicated `/mount` bind with recursive propagation so Plex can always see StreamArr's live Real-Debrid export across Umbrel restarts.
+  This ZeroQ package is intended to replace the stock Umbrel Plex app when you want persistent Riven integration. It includes a dedicated `/mount` bind with recursive propagation so Plex can see Riven's live virtual filesystem across Umbrel restarts.
 
 
   On first start, it will import your existing stock Umbrel Plex configuration into its own app data so the migration is smooth.
 
 
   Set Plex libraries to:
-  - `/downloads/streamarr-export/movies`
-  - `/downloads/streamarr-export/shows`
+  - `/mount/movies`
+  - `/mount/shows`
+
+
+  Riven profile libraries, such as Anime, appear under paths like `/mount/anime/movies` and `/mount/anime/shows`. The old StreamArr export remains available at `/streamarr` for migration.
 
 
   ⚠️ Because Plex still runs in host network mode on port 32400, stop the stock Plex app before installing this package. After you confirm this package imported your Plex setup correctly, you can remove the stock Plex app if you want.
@@ -42,9 +45,9 @@ permissions:
   - STORAGE_DOWNLOADS
   - GPU
 releaseNotes: >-
-  Community-store Plex build for ZeroQ App Store. Includes a permanent `/mount` bind for StreamArr's exported Real-Debrid library with recursive slave propagation, and now imports the stock Umbrel Plex configuration into this app's own data directory on first start for a smoother migration.
+  Community-store Plex build for ZeroQ App Store. Retargets `/mount` to Riven's virtual filesystem with recursive slave propagation so Plex can see Riven media files, while keeping the old StreamArr export available at `/streamarr` for migration.
 
 
-  The bundled Plex image is still Plex Media Server 1.43.0.10492. Full upstream release notes are available at https://www.videohelp.com/software/Plex
+  The bundled Plex image is Plex Media Server 1.43.1.10611. Full upstream release notes are available at https://www.videohelp.com/software/Plex
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store/pull/2

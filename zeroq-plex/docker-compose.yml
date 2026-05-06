@@ -28,5 +28,6 @@ services:
     volumes:
       - ${APP_DATA_DIR}/data/config:/config
       - ${APP_DATA_DIR}/data/transcode:/transcode
-      - ${UMBREL_ROOT}/data/storage/downloads:/downloads
-      - ${UMBREL_ROOT}/home/Downloads/streamarr-export:/mount:rslave
+      - ${UMBREL_ROOT}/data/storage/downloads:/downloads:rslave
+      - ${UMBREL_ROOT}/data/storage/downloads/riven:/mount:rslave
+      - ${UMBREL_ROOT}/home/Downloads/streamarr-export:/streamarr:rslave
