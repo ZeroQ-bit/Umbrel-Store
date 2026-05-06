@@ -4,7 +4,7 @@ name: Riven
 tagline: Debrid-powered media manager for Plex and Jellyfin
 icon: https://avatars.githubusercontent.com/u/172203452?v=4
 category: media
-version: "v0.23.6-15"
+version: "v0.23.6-16"
 port: 8080
 description: >-
   Riven builds a virtual media library from your configured Debrid and media manager services, then exposes it as a browsable filesystem for apps like Plex.
@@ -31,7 +31,7 @@ repo: https://github.com/rivenmedia/riven
 support: https://github.com/rivenmedia/riven/issues
 gallery: []
 releaseNotes: >-
-  Updates the Riven frontend package to the ZeroQ fork build with a tabbed settings page for General, Library, Downloaders, Content, Scraping, and Advanced settings.
+  Fixes the Umbrel proxy target for the Riven frontend so the app opens through Umbrel instead of waiting on an unresolvable container name.
 dependencies: []
 path: ""
 defaultUsername: ""

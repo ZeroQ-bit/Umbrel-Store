@@ -3,7 +3,7 @@ version: "3.7"
 services:
   app_proxy:
     environment:
-      APP_HOST: zeroq-riven_frontend_1
+      APP_HOST: zeroq-riven-frontend
       APP_PORT: 3000
       PROXY_AUTH_ADD: "false"
 
@@ -60,6 +60,10 @@ services:
     depends_on:
       server:
         condition: service_healthy
+    networks:
+      default:
+        aliases:
+          - zeroq-riven-frontend
 
   zeroq-riven-postgres:
     image: postgres:17-alpine@sha256:778d0b486d6daa02b77434d0358ec57a1b21fd8b6d22ac2eef56a33e816928f6
