@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: StreamArr Pro
-version: "main-8ae6338-dmm-import"
+version: "main-348fe29-dmm-rd-fallback"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/StreamArr-Pro/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,7 +29,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Adds DMM full library import. StreamArr can now scan public DMM hashlists in batches, verify hashes against Real-Debrid, apply your content and release exclusions, match high-confidence movies and series to TMDB, and store playable cached hashes for IPTV availability filters.
+  Fixes DMM Hashlist Import when Real-Debrid returns disabled_endpoint for bulk availability checks. StreamArr now falls back to DMM hashlist cache markers and still verifies each DMM stream through Real-Debrid at playback.
 torOnly: false
 permissions: []
 submitter: ZeroQ
