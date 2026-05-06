@@ -3,7 +3,7 @@ version: "3.7"
 services:
   app_proxy:
     environment:
-      APP_HOST: zeroq-riven-frontend
+      APP_HOST: frontend
       APP_PORT: 3000
       PROXY_AUTH_ADD: "false"
 
@@ -23,6 +23,7 @@ services:
       PGID: "1000"
       TZ: Etc/UTC
       API_KEY: "0123456789abcdef0123456789abcdef"
+      RIVEN_API_KEY: "0123456789abcdef0123456789abcdef"
       RIVEN_FORCE_ENV: "true"
       RIVEN_DATABASE_HOST: postgresql+psycopg2://postgres:postgres@zeroq-riven-postgres/riven
       RIVEN_FILESYSTEM_MOUNT_PATH: "/mount"
@@ -60,10 +61,6 @@ services:
     depends_on:
       server:
         condition: service_healthy
-    networks:
-      default:
-        aliases:
-          - zeroq-riven-frontend
 
   zeroq-riven-postgres:
     image: postgres:17-alpine@sha256:778d0b486d6daa02b77434d0358ec57a1b21fd8b6d22ac2eef56a33e816928f6
