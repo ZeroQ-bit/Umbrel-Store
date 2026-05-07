@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: StreamArr Pro
-version: "main-c7c9fe9-mounts1"
+version: "main-cec313e-mounts1"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/StreamArr-Pro/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,7 +29,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Fixes DMM Hashlist Import when Real-Debrid returns disabled_endpoint for bulk availability checks. StreamArr now falls back to DMM hashlist cache markers and still verifies each DMM stream through Real-Debrid at playback.
+  Adds the private Rivulet/Viero source bridge so Apple TV clients can fetch StreamArr-resolved cached streams with quality, provider, codec, size, and seeder metadata.
 torOnly: false
 permissions: []
 submitter: ZeroQ
