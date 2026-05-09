@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-plex
 category: media
 name: Plex (Riven)
-version: "1.43.1.10611.4"
+version: "1.43.1.10611.5"
 tagline: Stream Movies & TV Shows
 icon: https://avatars.githubusercontent.com/u/11744877?v=4
 description: >-
@@ -45,7 +45,7 @@ permissions:
   - STORAGE_DOWNLOADS
   - GPU
 releaseNotes: >-
-  Community-store Plex build for ZeroQ App Store. Recommends `/downloads/riven` as the Plex library root so Plex reads Riven through the shared downloads mount, while keeping the `/mount` alias and old StreamArr export available for migration.
+  Raises Umbrel inotify watcher limits before Plex starts, helping Plex detect large Riven libraries exposed under `/downloads/riven`.
 
 
   The bundled Plex image is Plex Media Server 1.43.1.10611. Full upstream release notes are available at https://www.videohelp.com/software/Plex
