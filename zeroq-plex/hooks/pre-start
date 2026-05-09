@@ -10,6 +10,12 @@ STOCK_APP_DATA_DIR="${UMBREL_ROOT}/app-data/plex/data"
 STOCK_CONFIG_DIR="${STOCK_APP_DATA_DIR}/config"
 STOCK_TRANSCODE_DIR="${STOCK_APP_DATA_DIR}/transcode"
 
+if command -v sysctl >/dev/null 2>&1; then
+  sysctl -w fs.inotify.max_user_watches=1048576 >/dev/null 2>&1 || true
+  sysctl -w fs.inotify.max_user_instances=2048 >/dev/null 2>&1 || true
+  sysctl -w fs.inotify.max_queued_events=32768 >/dev/null 2>&1 || true
+fi
+
 mkdir -p "${TARGET_CONFIG_DIR}" "${TARGET_TRANSCODE_DIR}"
 
 target_config_has_content() {

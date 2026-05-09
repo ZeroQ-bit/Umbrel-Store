@@ -4,9 +4,32 @@ set -euo pipefail
 APP_DIR="$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")"
 APP_DATA_DIR="${APP_DIR}/data"
 MOUNT_DIR="${UMBREL_ROOT}/data/storage/downloads/riven"
+LEGACY_MOUNT_DIR="${UMBREL_ROOT}/home/Downloads/riven"
 RIVEN_DATA_DIR="${APP_DATA_DIR}/riven"
 FRONTEND_DATA_DIR="${APP_DATA_DIR}/frontend"
 POSTGRES_DATA_DIR="${APP_DATA_DIR}/postgres"
+
+raise_inotify_limits() {
+  if command -v sysctl >/dev/null 2>&1; then
+    sysctl -w fs.inotify.max_user_watches=1048576 >/dev/null 2>&1 || true
+    sysctl -w fs.inotify.max_user_instances=2048 >/dev/null 2>&1 || true
+    sysctl -w fs.inotify.max_queued_events=32768 >/dev/null 2>&1 || true
+  fi
+}
+
+cleanup_stale_mount() {
+  local path="$1"
+
+  if findmnt -T "${path}" >/dev/null 2>&1 && ! ls -A "${path}" >/dev/null 2>&1; then
+    echo "Recovering stale Riven mount at ${path}"
+    umount -l "${path}" 2>/dev/null || true
+  fi
+}
+
+raise_inotify_limits
+cleanup_stale_mount "${LEGACY_MOUNT_DIR}"
+mkdir -p "$(dirname "${MOUNT_DIR}")"
+cleanup_stale_mount "${MOUNT_DIR}"
 
 mkdir -p "${MOUNT_DIR}" "${RIVEN_DATA_DIR}" "${FRONTEND_DATA_DIR}" "${POSTGRES_DATA_DIR}"
 mkdir -p "${RIVEN_DATA_DIR}/logs"
