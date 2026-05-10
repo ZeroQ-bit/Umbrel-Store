@@ -4,7 +4,7 @@ name: Riven
 tagline: Debrid-powered media manager for Plex and Jellyfin
 icon: https://avatars.githubusercontent.com/u/172203452?v=4
 category: media
-version: "v0.23.6-20"
+version: "v0.23.6-21"
 port: 8080
 description: >-
   Riven builds a virtual media library from your configured Debrid and media manager services, then exposes it as a browsable filesystem for apps like Plex.
@@ -31,7 +31,7 @@ repo: https://github.com/rivenmedia/riven
 support: https://github.com/rivenmedia/riven/issues
 gallery: []
 releaseNotes: >-
-  Adds startup recovery for stale Riven FUSE mounts and raises Umbrel inotify watcher limits so Plex can keep detecting the shared Riven library after large imports or reboots.
+  Aligns Riven's Plex updater refresh path with the Plex library paths documented for Umbrel, so Riven-triggered scans target `/downloads/riven` libraries after media is added.
 dependencies: []
 path: ""
 defaultUsername: ""

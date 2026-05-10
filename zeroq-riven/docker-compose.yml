@@ -28,7 +28,7 @@ services:
       RIVEN_DATABASE_HOST: postgresql+psycopg2://postgres:postgres@zeroq-riven-postgres/riven
       RIVEN_FILESYSTEM_MOUNT_PATH: "/mount"
       RIVEN_LIBRARY_PATH: "/mount"
-      RIVEN_UPDATERS_LIBRARY_PATH: "/mount"
+      RIVEN_UPDATERS_LIBRARY_PATH: "/downloads/riven"
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8080/openapi.json >/dev/null || exit 1"]
       interval: 30s
