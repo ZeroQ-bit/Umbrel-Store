@@ -6,17 +6,17 @@
       "manifest_version_format": "{tag}-mounts1",
       "manifest_version_source": {
         "type": "github_branch_head",
-        "repo": "ZeroQ-bit/StreamArr-Pro",
+        "repo": "ZeroQ-bit/Vortexo-Server",
         "branch": "main",
         "tag_format": "main-{sha7}"
       },
       "images": [
         {
           "compose_path": "zeroq-streamarr-pro/docker-compose.yml",
-          "repository": "ghcr.io/zeroq-bit/streamarr-pro",
+          "repository": "ghcr.io/zeroq-bit/vortexo-server",
           "source": {
             "type": "github_branch_head",
-            "repo": "ZeroQ-bit/StreamArr-Pro",
+            "repo": "ZeroQ-bit/Vortexo-Server",
             "branch": "main",
             "tag_format": "main-{sha7}"
           }

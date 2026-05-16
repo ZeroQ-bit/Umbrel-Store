@@ -234,7 +234,7 @@ The tracked apps and their update rules live in `scripts/store-update-config.jso
 
 Current sources:
 
-- `zeroq-streamarr-pro`: latest commit on `ZeroQ-bit/StreamArr-Pro` `main`, mapped to `ghcr.io/zeroq-bit/streamarr-pro:main-<sha7>`
+- `zeroq-streamarr-pro`: latest commit on `ZeroQ-bit/Vortexo-Server` `main`, mapped to `ghcr.io/zeroq-bit/vortexo-server:main-<sha7>`
 - `zeroq-plex`: latest matching LinuxServer Plex Docker Hub tag and digest
 - `zeroq-plextraktsync`: latest Git tag from `Taxel/PlexTraktSync` and matching GHCR digest
 

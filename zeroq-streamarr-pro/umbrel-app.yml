@@ -1,12 +1,12 @@
 manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
-name: StreamArr Pro
+name: Vortexo Server
 version: "main-cec313e-mounts1"
 tagline: Self-hosted media server with live TV and IPTV support
-icon: https://raw.githubusercontent.com/ZeroQ-bit/StreamArr-Pro/main/streamarr-pro-ui/public/logo.png
+icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Server/main/streamarr-pro-ui/public/logo.png
 description: >-
-  StreamArr Pro is a self-hosted media management system with a Netflix-style UI, Stremio-compatible stream providers, live TV support, and Xtream Codes / M3U output for IPTV apps.
+  Vortexo Server is a self-hosted media management system with a Netflix-style UI, Stremio-compatible stream providers, live TV support, and Xtream Codes / M3U output for IPTV apps.
 
 
   It combines movie and series discovery, Debrid-backed streaming, playlists, EPG, and IPTV source management in a single web app.
@@ -15,21 +15,21 @@ description: >-
   SET-UP INSTRUCTIONS
 
 
-  1. Open StreamArr Pro and create your first admin account.
+  1. Open Vortexo Server and create your first admin account.
   2. Add your TMDB API key in Settings.
   3. Configure your preferred Stremio addons, Debrid provider, and any live TV or Xtream sources.
 developer: ZeroQ
-website: https://github.com/ZeroQ-bit/StreamArr-Pro
+website: https://github.com/ZeroQ-bit/Vortexo-Server
 dependencies: []
-repo: https://github.com/ZeroQ-bit/StreamArr-Pro
-support: https://github.com/ZeroQ-bit/StreamArr-Pro/issues
+repo: https://github.com/ZeroQ-bit/Vortexo-Server
+support: https://github.com/ZeroQ-bit/Vortexo-Server/issues
 port: 18455
 gallery: []
 path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Adds the private Rivulet/Viero source bridge so Apple TV clients can fetch StreamArr-resolved cached streams with quality, provider, codec, size, and seeder metadata.
+  Adds the private Vortexo source bridge so Apple TV clients can fetch Vortexo Server-resolved cached streams with quality, provider, codec, size, and seeder metadata.
 torOnly: false
 permissions: []
 submitter: ZeroQ
