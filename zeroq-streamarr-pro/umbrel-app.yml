@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: Vortexo Server
-version: "main-13f300d-subtitles1"
+version: "main-a1e89ac-subtitles2"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Server/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,7 +29,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Adds the subtitle translation API setting for Apple TV clients, plus the private source bridge for Vortexo Server-resolved cached streams.
+  Adds bundled local subtitle translation for Apple TV clients, removes the paid translation API key field, and converts Serbian/Croatian/Bosnian subtitle output to Latin script.
 torOnly: false
 permissions: []
 submitter: ZeroQ

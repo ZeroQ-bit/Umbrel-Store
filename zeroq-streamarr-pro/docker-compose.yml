@@ -8,7 +8,7 @@ services:
       PROXY_AUTH_ADD: "false"
 
   server:
-    image: ghcr.io/zeroq-bit/vortexo-server:main-13f300d@sha256:aaea68df7e408656c8663a6277a0e13fb0cf81e96f439d68c6697f13b126d82d
+    image: ghcr.io/zeroq-bit/vortexo-server:main-a1e89ac@sha256:1a6ab6bd20866c7100df57590e3e0bd5c1f5af4fdecb9919d926f22a6753362e
     restart: on-failure
     stop_grace_period: 1m
     environment:
@@ -16,6 +16,7 @@ services:
       JWT_SECRET: ${APP_SEED}
       STREAMARR_DISABLE_SELF_UPDATE: "true"
       STREAMARR_LISTEN_PORT: "8080"
+      LIBRETRANSLATE_URL: http://libretranslate:5000
       TZ: Etc/UTC
     volumes:
       - ${APP_DATA_DIR}/data/cache:/app/cache
@@ -33,6 +34,25 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
+
+  libretranslate:
+    image: libretranslate/libretranslate:v1.9.5@sha256:b358e61598c9d5240ddb5f9e8f53389931db8305ccfd426fbfcc603f4b24c7a4
+    restart: on-failure
+    stop_grace_period: 1m
+    environment:
+      LT_HOST: 0.0.0.0
+      LT_PORT: "5000"
+      LT_DISABLE_WEB_UI: "true"
+      LT_UPDATE_MODELS: "true"
+      LT_LOAD_ONLY: en,ar,bg,cs,da,de,el,es,fi,fr,it,nl,pl,pt,ru,sr,sv,tr,uk,zh-Hans
+    volumes:
+      - ${APP_DATA_DIR}/data/libretranslate:/home/libretranslate/.local:rw
+    healthcheck:
+      test: ["CMD-SHELL", "./venv/bin/python scripts/healthcheck.py"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 2m
 
   postgres:
     image: postgres:16-alpine@sha256:4e6e670bb069649261c9c18031f0aded7bb249a5b6664ddec29c013a89310d50
