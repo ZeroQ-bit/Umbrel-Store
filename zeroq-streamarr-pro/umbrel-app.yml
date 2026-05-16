@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: Vortexo Server
-version: "main-a1e89ac-mounts1"
+version: "main-a1e89ac-mounts2"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Server/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,7 +29,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Fixes the bundled local subtitle translation sidecar on Umbrel by using a writable persisted model directory and explicit worker settings.
+  Fixes the bundled local subtitle translation sidecar on Umbrel by removing an unsupported Serbian model code that prevented LibreTranslate from booting.
 torOnly: false
 permissions: []
 submitter: ZeroQ

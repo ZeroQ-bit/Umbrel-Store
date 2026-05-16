@@ -47,7 +47,7 @@ services:
       LT_DISABLE_WEB_UI: "true"
       LT_DISABLE_FILES_TRANSLATION: "true"
       LT_UPDATE_MODELS: "true"
-      LT_LOAD_ONLY: en,ar,bg,cs,da,de,el,es,fi,fr,it,nl,pl,pt,ru,sr,sv,tr,uk,zh-Hans
+      LT_LOAD_ONLY: en,ar,bg,cs,da,de,el,es,fi,fr,it,nl,pl,pt,ru,sv,tr,uk,zh-Hans
     volumes:
       - ${APP_DATA_DIR}/data/libretranslate:/home/libretranslate/.local/share:rw
     healthcheck:
