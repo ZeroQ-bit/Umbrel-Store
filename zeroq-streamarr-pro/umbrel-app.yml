@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: Vortexo Server
-version: "main-a1e89ac-subtitles2"
+version: "main-a1e89ac-subtitles3"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Server/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,7 +29,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Adds bundled local subtitle translation for Apple TV clients, removes the paid translation API key field, and converts Serbian/Croatian/Bosnian subtitle output to Latin script.
+  Fixes the bundled local subtitle translation sidecar on Umbrel by using a writable persisted model directory and explicit worker settings.
 torOnly: false
 permissions: []
 submitter: ZeroQ
