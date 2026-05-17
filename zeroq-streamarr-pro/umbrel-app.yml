@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: Vortexo Server
-version: "main-f3ad37e-mounts1"
+version: "main-f23179b-mounts1"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Server/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,7 +29,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Fixes Plex Discover source matching, hydrates TV episode lists when series are added, and shows episodes in the Search detail modal for added series.
+  Filters Vortexo Server episode stream lookups to the exact requested season and episode, preventing whole-season DMM results from appearing as playback choices.
 torOnly: false
 permissions: []
 submitter: ZeroQ
