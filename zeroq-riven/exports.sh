@@ -2,6 +2,7 @@ export APP_ZEROQ_RIVEN_URL="http://zeroq-riven_server_1:8080"
 export APP_ZEROQ_RIVEN_DATA_DIR="${EXPORTS_APP_DIR}/data/riven"
 export APP_ZEROQ_RIVEN_MOUNT_DIR="${UMBREL_ROOT}/data/storage/downloads/riven"
 export APP_ZEROQ_RIVEN_PORT="8080"
+export APP_ZEROQ_RIVEN_WEBDAV_PORT="8081"
 
 primary_local_ipv4="$(ip route get 1.1.1.1 2>/dev/null | awk '/src/ { for (i = 1; i <= NF; i++) if ($i == "src") { print $(i+1); exit } }')"
 
@@ -20,6 +21,8 @@ fi
 
 if [[ -n "${primary_local_ipv4}" ]]; then
   export APP_ZEROQ_RIVEN_LOCAL_URL="http://${primary_local_ipv4}:${APP_ZEROQ_RIVEN_PORT}"
+  export APP_ZEROQ_RIVEN_WEBDAV_LOCAL_URL="http://${primary_local_ipv4}:${APP_ZEROQ_RIVEN_WEBDAV_PORT}"
 else
   export APP_ZEROQ_RIVEN_LOCAL_URL="http://${DEVICE_DOMAIN_NAME}:${APP_ZEROQ_RIVEN_PORT}"
+  export APP_ZEROQ_RIVEN_WEBDAV_LOCAL_URL="http://${DEVICE_DOMAIN_NAME}:${APP_ZEROQ_RIVEN_WEBDAV_PORT}"
 fi

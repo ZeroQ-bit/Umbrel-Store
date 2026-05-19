@@ -41,6 +41,33 @@ services:
       zeroq-riven-postgres:
         condition: service_healthy
 
+  webdav:
+    image: rclone/rclone:1.69.3@sha256:1f497a86a6466395e62a5886613a14b7b18809543566ef9fa1371a7ecc0f
+    restart: on-failure
+    stop_grace_period: 1m
+    user: "1000:1000"
+    command:
+      - serve
+      - webdav
+      - /mount
+      - "-L"
+      - --addr
+      - :8081
+      - --read-only
+      - --user
+      - riven
+      - --pass
+      - "${APP_PASSWORD}"
+      - --log-level
+      - INFO
+    ports:
+      - "8081:8081"
+    volumes:
+      - ${UMBREL_ROOT}/data/storage/downloads/riven:/mount:rslave,ro
+    depends_on:
+      server:
+        condition: service_healthy
+
   frontend:
     image: ghcr.io/zeroq-bit/riven-frontend:sha-85c441d@sha256:5b235715e63b01376b376882236a44d071e9225d88fe6b588315cb99cade36c7
     restart: on-failure
