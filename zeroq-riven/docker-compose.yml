@@ -42,7 +42,7 @@ services:
         condition: service_healthy
 
   webdav:
-    image: rclone/rclone:1.69.3@sha256:1f497a86a6466395e62a5886613a14b7b18809543566ef9fa1371a7ecc0f
+    image: rclone/rclone:1.69.3@sha256:1f497a86a6466395e62a5886613a14b7b18809543566ef9fa35fa1371a7ecc0f
     restart: on-failure
     stop_grace_period: 1m
     user: "1000:1000"
