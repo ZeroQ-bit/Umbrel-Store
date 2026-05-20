@@ -54,10 +54,6 @@ services:
       - --addr
       - :8081
       - --read-only
-      - --user
-      - riven
-      - --pass
-      - "${APP_PASSWORD}"
       - --log-level
       - INFO
     ports:
