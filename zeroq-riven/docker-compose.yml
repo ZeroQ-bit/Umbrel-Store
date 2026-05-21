@@ -68,6 +68,37 @@ services:
       server:
         condition: service_healthy
 
+  ftp:
+    image: rclone/rclone:1.69.3@sha256:1f497a86a6466395e62a5886613a14b7b18809543566ef9fa35fa1371a7ecc0f
+    restart: on-failure
+    stop_grace_period: 1m
+    user: "1000:1000"
+    command:
+      - serve
+      - ftp
+      - /mount
+      - "-L"
+      - --addr
+      - :2121
+      - --read-only
+      - --user
+      - riven
+      - --pass
+      - riven
+      - --passive-port
+      - 30000-30010
+      - --public-ip=${APP_ZEROQ_RIVEN_LOCAL_IPV4:-127.0.0.1}
+      - --log-level
+      - INFO
+    ports:
+      - "2121:2121"
+      - "30000-30010:30000-30010"
+    volumes:
+      - ${UMBREL_ROOT}/data/storage/downloads/riven:/mount:rslave,ro
+    depends_on:
+      server:
+        condition: service_healthy
+
   frontend:
     image: ghcr.io/zeroq-bit/riven-frontend:sha-85c441d@sha256:5b235715e63b01376b376882236a44d071e9225d88fe6b588315cb99cade36c7
     restart: on-failure

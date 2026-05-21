@@ -3,6 +3,7 @@ export APP_ZEROQ_RIVEN_DATA_DIR="${EXPORTS_APP_DIR}/data/riven"
 export APP_ZEROQ_RIVEN_MOUNT_DIR="${UMBREL_ROOT}/data/storage/downloads/riven"
 export APP_ZEROQ_RIVEN_PORT="8080"
 export APP_ZEROQ_RIVEN_WEBDAV_PORT="8081"
+export APP_ZEROQ_RIVEN_FTP_PORT="2121"
 
 primary_local_ipv4="$(ip route get 1.1.1.1 2>/dev/null | awk '/src/ { for (i = 1; i <= NF; i++) if ($i == "src") { print $(i+1); exit } }')"
 
@@ -20,9 +21,13 @@ if [[ -z "${primary_local_ipv4}" && -n "${local_ipv4s:-}" ]]; then
 fi
 
 if [[ -n "${primary_local_ipv4}" ]]; then
+  export APP_ZEROQ_RIVEN_LOCAL_IPV4="${primary_local_ipv4}"
   export APP_ZEROQ_RIVEN_LOCAL_URL="http://${primary_local_ipv4}:${APP_ZEROQ_RIVEN_PORT}"
   export APP_ZEROQ_RIVEN_WEBDAV_LOCAL_URL="http://${primary_local_ipv4}:${APP_ZEROQ_RIVEN_WEBDAV_PORT}"
+  export APP_ZEROQ_RIVEN_FTP_LOCAL_URL="ftp://${primary_local_ipv4}:${APP_ZEROQ_RIVEN_FTP_PORT}"
 else
+  export APP_ZEROQ_RIVEN_LOCAL_IPV4="127.0.0.1"
   export APP_ZEROQ_RIVEN_LOCAL_URL="http://${DEVICE_DOMAIN_NAME}:${APP_ZEROQ_RIVEN_PORT}"
   export APP_ZEROQ_RIVEN_WEBDAV_LOCAL_URL="http://${DEVICE_DOMAIN_NAME}:${APP_ZEROQ_RIVEN_WEBDAV_PORT}"
+  export APP_ZEROQ_RIVEN_FTP_LOCAL_URL="ftp://${DEVICE_DOMAIN_NAME}:${APP_ZEROQ_RIVEN_FTP_PORT}"
 fi
