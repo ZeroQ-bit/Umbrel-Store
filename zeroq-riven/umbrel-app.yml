@@ -4,7 +4,7 @@ name: Riven
 tagline: Debrid-powered media manager for Plex and Jellyfin
 icon: https://avatars.githubusercontent.com/u/172203452?v=4
 category: media
-version: "v0.23.6-24"
+version: "v0.23.6-25"
 port: 8080
 description: >-
   Riven builds a virtual media library from your configured Debrid and media manager services, then exposes it as a browsable filesystem for apps like Plex.
@@ -20,7 +20,7 @@ description: >-
   2. Configure your Debrid, indexer, and media manager integrations inside Riven.
   3. In Plex, add a library that points to `/downloads/riven/movies` and/or `/downloads/riven/shows`.
   4. After Riven finishes mounting content, refresh the matching Plex library.
-  5. In Infuse, add a WebDAV share at `http://<umbrel-ip>:8081` with no username or password.
+  5. In Infuse, add a WebDAV share at `http://<umbrel-ip>:8081` using username `riven` and password `riven`.
 
 
   Riven relies on FUSE and a shared mount path. This Umbrel package prepares that shared mount automatically before the app starts.
@@ -32,10 +32,10 @@ repo: https://github.com/rivenmedia/riven
 support: https://github.com/rivenmedia/riven/issues
 gallery: []
 releaseNotes: >-
-  Makes the read-only WebDAV share passwordless for easier Infuse setup on the local network.
+  Sets simple WebDAV credentials for Infuse: username `riven`, password `riven`.
 dependencies: []
 path: ""
-defaultUsername: ""
-defaultPassword: ""
+defaultUsername: "riven"
+defaultPassword: "riven"
 permissions:
   - STORAGE_DOWNLOADS

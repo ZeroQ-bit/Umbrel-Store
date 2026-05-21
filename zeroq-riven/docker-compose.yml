@@ -54,6 +54,10 @@ services:
       - --addr
       - :8081
       - --read-only
+      - --user
+      - riven
+      - --pass
+      - riven
       - --log-level
       - INFO
     ports:
