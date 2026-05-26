@@ -28,6 +28,7 @@ services:
       - ${APP_DATA_DIR}/data/cache:/app/cache
       - ${APP_DATA_DIR}/data/logs:/app/logs
       - ${APP_DATA_DIR}/data/rd-library:/app/rd-library
+      - ${APP_DATA_DIR}/data/rd-mount:/mnt/rd:rshared
     depends_on:
       postgres:
         condition: service_healthy

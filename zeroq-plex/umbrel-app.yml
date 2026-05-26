@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-plex
 category: media
 name: Plex (Vortexo)
-version: "1.43.2.10687.5"
+version: "1.43.2.10687.6"
 tagline: Stream Movies & TV Shows
 icon: https://avatars.githubusercontent.com/u/11744877?v=4
 description: >-
@@ -41,7 +41,7 @@ torOnly: false
 permissions:
   - GPU
 releaseNotes: >-
-  Simplifies Plex integration to use only Vortexo Server's RD WebDAV symlink library at `/rd-library`.
+  Mounts both Vortexo Server's RD WebDAV symlink library at `/rd-library` and its RD source path at `/mnt/rd` so Plex can follow the symlinked video files correctly.
 
 
   The bundled Plex image is Plex Media Server 1.43.1.10611. Full upstream release notes are available at https://www.videohelp.com/software/Plex

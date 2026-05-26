@@ -3,7 +3,7 @@
     {
       "id": "zeroq-streamarr-pro",
       "manifest_path": "zeroq-streamarr-pro/umbrel-app.yml",
-      "manifest_version_format": "{tag}-mounts1",
+      "manifest_version_format": "{tag}-mounts2",
       "manifest_version_source": {
         "type": "github_branch_head",
         "repo": "ZeroQ-bit/Vortexo-Server",
@@ -26,7 +26,7 @@
     {
       "id": "zeroq-plex",
       "manifest_path": "zeroq-plex/umbrel-app.yml",
-      "manifest_version_format": "{version_core}.5",
+      "manifest_version_format": "{version_core}.6",
       "manifest_version_source": {
         "type": "dockerhub_latest_tag",
         "repository": "linuxserver/plex",

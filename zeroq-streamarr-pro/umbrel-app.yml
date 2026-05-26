@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: Vortexo Server
-version: "main-1b1a369-mounts1"
+version: "main-1b1a369-mounts2"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Server/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,7 +29,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Shows RD WebDAV and library-backed sources in the legacy Vortexo Server web UI instead of misleading empty "No streams found" results when library sources exist.
+  Shares the RD WebDAV mount path with Plex so `/app/rd-library` symlinks resolve to real video files, and shows library-backed sources in the legacy Vortexo Server web UI instead of misleading empty results.
 torOnly: false
 permissions: []
 submitter: ZeroQ
