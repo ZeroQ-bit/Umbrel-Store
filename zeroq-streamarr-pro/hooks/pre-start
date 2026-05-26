@@ -5,6 +5,16 @@ APP_DIR="$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")"
 APP_DATA_DIR="${APP_DIR}/data"
 MOUNT_DIR="${APP_DATA_DIR}/rd-mount"
 
+mkdir -p "${APP_DATA_DIR}"
+
+if ! stat "${MOUNT_DIR}" >/dev/null 2>&1; then
+  echo "Preparing Real-Debrid mount path at ${MOUNT_DIR}"
+  fusermount3 -uz "${MOUNT_DIR}" 2>/dev/null || true
+  fusermount -uz "${MOUNT_DIR}" 2>/dev/null || true
+  umount -l "${MOUNT_DIR}" 2>/dev/null || true
+  rm -rf "${MOUNT_DIR}" 2>/dev/null || true
+fi
+
 mkdir -p "${MOUNT_DIR}"
 
 if ! mountpoint -q "${MOUNT_DIR}"; then

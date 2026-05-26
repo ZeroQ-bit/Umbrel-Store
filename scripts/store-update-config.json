@@ -3,7 +3,7 @@
     {
       "id": "zeroq-streamarr-pro",
       "manifest_path": "zeroq-streamarr-pro/umbrel-app.yml",
-      "manifest_version_format": "{tag}-tvdb2",
+      "manifest_version_format": "{tag}-tvdb3",
       "manifest_version_source": {
         "type": "github_branch_head",
         "repo": "ZeroQ-bit/Vortexo-Server",
