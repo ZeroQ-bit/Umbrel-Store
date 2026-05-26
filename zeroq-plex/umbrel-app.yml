@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-plex
 category: media
 name: Plex (Vortexo)
-version: "1.43.2.10687.6"
+version: "1.43.2.10687.7"
 tagline: Stream Movies & TV Shows
 icon: https://avatars.githubusercontent.com/u/11744877?v=4
 description: >-
@@ -13,10 +13,6 @@ description: >-
 
 
   This ZeroQ package is intended to replace the stock Umbrel Plex app when you want direct integration with Vortexo Server's RD WebDAV symlink library.
-
-
-  On first start, it will import your existing stock Umbrel Plex configuration into its own app data so the migration is smooth.
-
 
   Set Plex libraries to:
   - `/rd-library/Movies`
@@ -41,6 +37,9 @@ torOnly: false
 permissions:
   - GPU
 releaseNotes: >-
+  Stops importing stock Plex app data automatically, so old Plex library scan preferences do not get carried forward into this package.
+
+
   Mounts both Vortexo Server's RD WebDAV symlink library at `/rd-library` and its RD source path at `/mnt/rd` so Plex can follow the symlinked video files correctly.
 
 

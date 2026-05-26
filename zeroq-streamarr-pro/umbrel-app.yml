@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: Vortexo Server
-version: "main-cbc7ca0-mounts2"
+version: "main-cbc7ca0-mounts3"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Server/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,6 +29,9 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
+  Fixes the Umbrel shared-mount hook so the RD WebDAV FUSE mount is propagated on the real app-data path Plex reads from.
+
+
   Adds `--allow-other` to the RD WebDAV rclone mount so Plex can traverse the shared `/mnt/rd` target behind the `/app/rd-library` symlinks.
 
 
