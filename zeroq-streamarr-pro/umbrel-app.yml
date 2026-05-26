@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: Vortexo Server
-version: "main-27d9d43-mounts5"
+version: "main-211b79e-tvdb1"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Server/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,6 +29,15 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
+  Merges duplicate Real-Debrid Library and RD WebDAV Library entries that point at the same cached file, keeping the local RD WebDAV playback path while preserving the richer stream metadata.
+
+
+  Regenerates TV symlink folders with TVDB-first Plex IDs, for example `The Sopranos (1999) {tvdb-75299}`, so Plex TV Series matching does not misidentify valid files as unrelated shows.
+
+
+  Removes superseded RD WebDAV symlinks when a movie or episode path changes, letting Plex rescan the current canonical library tree instead of keeping stale paths.
+
+
   Allows the RD WebDAV rclone mount to attach over Umbrel's shared bind folder so Plex can resolve symlink targets.
 
 
