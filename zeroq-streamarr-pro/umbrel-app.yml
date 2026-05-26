@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: Vortexo Server
-version: "main-3d488ef-mounts1"
+version: "main-1b1a369-mounts1"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Server/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,7 +29,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Filters Vortexo Server episode stream lookups to the exact requested season and episode, preventing whole-season DMM results from appearing as playback choices.
+  Shows RD WebDAV and library-backed sources in the legacy Vortexo Server web UI instead of misleading empty "No streams found" results when library sources exist.
 torOnly: false
 permissions: []
 submitter: ZeroQ
