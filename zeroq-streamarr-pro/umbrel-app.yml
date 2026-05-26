@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: Vortexo Server
-version: "main-37fe173-tvdb3"
+version: "main-506c118-tvdb3"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Server/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,6 +29,9 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
+  Queues a Real-Debrid library sync after DMM Fill Missing Streams caches new matches, and marks duplicate local rows for the same hash as synced so the same torrent is not added twice.
+
+
   Cleans up a stale/disconnected Real-Debrid WebDAV mount before startup so Umbrel updates do not get stuck at 99% with `Transport endpoint is not connected`.
 
 
