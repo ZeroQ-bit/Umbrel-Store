@@ -29,6 +29,9 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
+  Remounts the Debrid WebDAV library when the saved WebDAV URL or credentials change, so switching from Real-Debrid to TorBox no longer keeps scanning the stale Real-Debrid mount.
+
+
   Queues a Real-Debrid library sync after DMM Fill Missing Streams caches new matches, and marks duplicate local rows for the same hash as synced so the same torrent is not added twice.
 
 

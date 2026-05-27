@@ -8,7 +8,7 @@ MOUNT_DIR="${APP_DATA_DIR}/rd-mount"
 mkdir -p "${APP_DATA_DIR}"
 
 if ! stat "${MOUNT_DIR}" >/dev/null 2>&1; then
-  echo "Preparing Real-Debrid mount path at ${MOUNT_DIR}"
+  echo "Preparing Debrid WebDAV mount path at ${MOUNT_DIR}"
   fusermount3 -uz "${MOUNT_DIR}" 2>/dev/null || true
   fusermount -uz "${MOUNT_DIR}" 2>/dev/null || true
   umount -l "${MOUNT_DIR}" 2>/dev/null || true
@@ -27,5 +27,5 @@ if [[ "${PROPAGATION}" != "shared" && "${PROPAGATION}" != "rshared" ]]; then
 fi
 
 if [[ ! -e /dev/fuse ]]; then
-  echo "Warning: /dev/fuse is not available on this Umbrel host. Vortexo Server will not be able to mount its RD WebDAV library." >&2
+  echo "Warning: /dev/fuse is not available on this Umbrel host. Vortexo Server will not be able to mount its Debrid WebDAV library." >&2
 fi
