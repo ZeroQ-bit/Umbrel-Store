@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: Vortexo Server
-version: "main-8dccf44-plex-safe-quality-tags"
+version: "main-2e856b6-tvdb3"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Server/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -29,6 +29,9 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
+  Allows DMM Hashlist Import / Fill Missing Streams to use a saved TorBox API key even when the global TorBox provider toggle is off, fixing the misleading "Real-Debrid or TorBox API key is required" scheduler error.
+
+
   Remounts the Debrid WebDAV library when the saved WebDAV URL or credentials change, so switching from Real-Debrid to TorBox no longer keeps scanning the stale Real-Debrid mount.
 
 
