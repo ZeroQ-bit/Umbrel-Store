@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-plex
 category: media
 name: Plex (Vortexo)
-version: "1.43.2.10687.7"
+version: "1.43.2.10687.8"
 tagline: Stream Movies & TV Shows
 icon: https://avatars.githubusercontent.com/u/11744877?v=4
 description: >-
@@ -37,6 +37,9 @@ torOnly: false
 permissions:
   - GPU
 releaseNotes: >-
+  Prepares Vortexo Server's Debrid WebDAV mount path before Plex starts, so Plex binds the shared mount point and can follow `/rd-library` symlinks to real video files after Vortexo mounts Real-Debrid or TorBox WebDAV.
+
+
   Stops importing stock Plex app data automatically, so old Plex library scan preferences do not get carried forward into this package.
 
 
