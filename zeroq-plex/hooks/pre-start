@@ -14,6 +14,6 @@ if command -v sysctl >/dev/null 2>&1; then
   sysctl -w fs.inotify.max_queued_events=32768 >/dev/null 2>&1 || true
 fi
 
-mkdir -p "${TARGET_CONFIG_DIR}" "${TARGET_TRANSCODE_DIR}" "${DOWNLOADS_DIR}" "${VORTEXO_LIBRARY_DIR}"
+mkdir -p "${TARGET_CONFIG_DIR}" "${TARGET_TRANSCODE_DIR}" "${DOWNLOADS_DIR}" "${VORTEXO_LIBRARY_DIR}/Movies" "${VORTEXO_LIBRARY_DIR}/TV"
 
 chown -R 1000:1000 "${TARGET_CONFIG_DIR}" "${TARGET_TRANSCODE_DIR}"
