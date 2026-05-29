@@ -3,7 +3,7 @@ set -euo pipefail
 
 APP_DIR="$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")"
 APP_DATA_DIR="${APP_DIR}/data"
-DOWNLOADS_DIR="${UMBREL_ROOT}/data/storage/downloads"
+DOWNLOADS_DIR="${UMBREL_ROOT}/home/Downloads"
 LIBRARY_DIR="${DOWNLOADS_DIR}/vortexo"
 MOUNT_DIR="${DOWNLOADS_DIR}/.vortexo-source"
 

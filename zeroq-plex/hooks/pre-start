@@ -5,7 +5,7 @@ APP_DIR="$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")"
 APP_DATA_DIR="${APP_DIR}/data"
 TARGET_CONFIG_DIR="${APP_DATA_DIR}/config"
 TARGET_TRANSCODE_DIR="${APP_DATA_DIR}/transcode"
-DOWNLOADS_DIR="${UMBREL_ROOT}/data/storage/downloads"
+DOWNLOADS_DIR="${UMBREL_ROOT}/home/Downloads"
 VORTEXO_LIBRARY_DIR="${DOWNLOADS_DIR}/vortexo"
 
 if command -v sysctl >/dev/null 2>&1; then
