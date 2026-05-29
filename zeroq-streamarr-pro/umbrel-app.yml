@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: Vortexo Server
-version: "main-c5d4e6d-downloads2"
+version: "main-1c24c9e-tvdb3"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Server/main/streamarr-pro-ui/public/logo.png
 description: >-
