@@ -27,7 +27,7 @@ services:
     volumes:
       - ${APP_DATA_DIR}/data/cache:/app/cache
       - ${APP_DATA_DIR}/data/logs:/app/logs
-      - ${APP_DATA_DIR}/data/rd-library:/app/rd-library
+      - ${UMBREL_ROOT}/data/storage/downloads:/app/rd-library:rslave
       - ${APP_DATA_DIR}/data/rd-mount:/mnt/rd:rshared
     depends_on:
       postgres:
