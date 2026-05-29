@@ -3,9 +3,12 @@ set -euo pipefail
 
 APP_DIR="$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")"
 APP_DATA_DIR="${APP_DIR}/data"
-MOUNT_DIR="${APP_DATA_DIR}/rd-mount"
+DOWNLOADS_DIR="${UMBREL_ROOT}/data/storage/downloads"
+LIBRARY_DIR="${DOWNLOADS_DIR}/vortexo"
+MOUNT_DIR="${DOWNLOADS_DIR}/.vortexo-source"
 
 mkdir -p "${APP_DATA_DIR}"
+mkdir -p "${DOWNLOADS_DIR}" "${LIBRARY_DIR}"
 
 if ! stat "${MOUNT_DIR}" >/dev/null 2>&1; then
   echo "Preparing Debrid WebDAV mount path at ${MOUNT_DIR}"

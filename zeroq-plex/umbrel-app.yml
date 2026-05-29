@@ -12,11 +12,11 @@ description: >-
   Plex uses a server to house your media library and player apps to playback the media. Add, access, and share all the entertainment that matters to you, on almost any device.
 
 
-  This ZeroQ package is intended to replace the stock Umbrel Plex app when you want direct integration with Vortexo Server's RD WebDAV symlink library.
+  This ZeroQ package is intended to replace the stock Umbrel Plex app when you want direct integration with Vortexo Server's shared downloads library.
 
   Set Plex libraries to:
-  - `/rd-library/Movies`
-  - `/rd-library/TV`
+  - `/downloads/vortexo/Movies`
+  - `/downloads/vortexo/TV`
 
 
   ⚠️ Because Plex still runs in host network mode on port 32400, stop the stock Plex app before installing this package. After you confirm this package imported your Plex setup correctly, you can remove the stock Plex app if you want.
@@ -37,13 +37,13 @@ torOnly: false
 permissions:
   - GPU
 releaseNotes: >-
-  Prepares Vortexo Server's Debrid WebDAV mount path before Plex starts, so Plex binds the shared mount point and can follow `/rd-library` symlinks to real video files after Vortexo mounts Real-Debrid or TorBox WebDAV.
+  Mounts Umbrel's shared downloads folder at `/downloads`, so Plex can scan Vortexo Server's generated library at `/downloads/vortexo`.
 
 
   Stops importing stock Plex app data automatically, so old Plex library scan preferences do not get carried forward into this package.
 
 
-  Mounts both Vortexo Server's RD WebDAV symlink library at `/rd-library` and its RD source path at `/mnt/rd` so Plex can follow the symlinked video files correctly.
+  Vortexo Server now keeps both its clean symlink library and its Debrid WebDAV source mount under the shared downloads folder, so Plex can follow symlinks without a separate app-data mount.
 
 
   The bundled Plex image is Plex Media Server 1.43.1.10611. Full upstream release notes are available at https://www.videohelp.com/software/Plex

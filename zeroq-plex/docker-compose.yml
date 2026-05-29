@@ -28,5 +28,4 @@ services:
     volumes:
       - ${APP_DATA_DIR}/data/config:/config
       - ${APP_DATA_DIR}/data/transcode:/transcode
-      - ${UMBREL_ROOT}/app-data/zeroq-streamarr-pro/data/rd-library:/rd-library:rslave
-      - ${UMBREL_ROOT}/app-data/zeroq-streamarr-pro/data/rd-mount:/mnt/rd:rslave,ro
+      - ${UMBREL_ROOT}/data/storage/downloads:/downloads:rslave

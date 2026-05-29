@@ -5,9 +5,8 @@ APP_DIR="$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")"
 APP_DATA_DIR="${APP_DIR}/data"
 TARGET_CONFIG_DIR="${APP_DATA_DIR}/config"
 TARGET_TRANSCODE_DIR="${APP_DATA_DIR}/transcode"
-STREAMARR_DATA_DIR="$(dirname "${APP_DIR}")/zeroq-streamarr-pro/data"
-RD_LIBRARY_DIR="${STREAMARR_DATA_DIR}/rd-library"
-RD_MOUNT_DIR="${STREAMARR_DATA_DIR}/rd-mount"
+DOWNLOADS_DIR="${UMBREL_ROOT}/data/storage/downloads"
+VORTEXO_LIBRARY_DIR="${DOWNLOADS_DIR}/vortexo"
 
 if command -v sysctl >/dev/null 2>&1; then
   sysctl -w fs.inotify.max_user_watches=1048576 >/dev/null 2>&1 || true
@@ -15,25 +14,6 @@ if command -v sysctl >/dev/null 2>&1; then
   sysctl -w fs.inotify.max_queued_events=32768 >/dev/null 2>&1 || true
 fi
 
-mkdir -p "${TARGET_CONFIG_DIR}" "${TARGET_TRANSCODE_DIR}" "${RD_LIBRARY_DIR}"
-
-if ! stat "${RD_MOUNT_DIR}" >/dev/null 2>&1; then
-  echo "Preparing Debrid WebDAV mount path at ${RD_MOUNT_DIR}"
-  fusermount3 -uz "${RD_MOUNT_DIR}" 2>/dev/null || true
-  fusermount -uz "${RD_MOUNT_DIR}" 2>/dev/null || true
-  umount -l "${RD_MOUNT_DIR}" 2>/dev/null || true
-  rm -rf "${RD_MOUNT_DIR}" 2>/dev/null || true
-fi
-
-mkdir -p "${RD_MOUNT_DIR}"
-
-if ! mountpoint -q "${RD_MOUNT_DIR}"; then
-  mount --bind "${RD_MOUNT_DIR}" "${RD_MOUNT_DIR}"
-fi
-
-PROPAGATION="$(findmnt -T "${RD_MOUNT_DIR}" -o PROPAGATION -n 2>/dev/null || true)"
-if [[ "${PROPAGATION}" != "shared" && "${PROPAGATION}" != "rshared" ]]; then
-  mount --make-rshared "${RD_MOUNT_DIR}"
-fi
+mkdir -p "${TARGET_CONFIG_DIR}" "${TARGET_TRANSCODE_DIR}" "${DOWNLOADS_DIR}" "${VORTEXO_LIBRARY_DIR}"
 
 chown -R 1000:1000 "${TARGET_CONFIG_DIR}" "${TARGET_TRANSCODE_DIR}"
