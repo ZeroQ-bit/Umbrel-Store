@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-streamarr-pro
 category: media
 name: Vortexo Server
-version: "main-ae52ca2-tvdb3"
+version: "main-b418363-tvdb3"
 tagline: Self-hosted media server with live TV and IPTV support
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Server/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -30,6 +30,9 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
+  Adds an optional `Add Missing Series Episodes` setting next to collections. When Debrid WebDAV imports any episode for a show, Vortexo can add missing episode rows for all seasons before and after that matched season so the stream-fill workers can complete gaps.
+
+
   Moves the generated RD WebDAV symlink library to `/downloads/vortexo` and the rclone source mount to `/downloads/.vortexo-source`, so stock Plex can see and follow Vortexo symlinks through its normal `/downloads` mount.
 
 
