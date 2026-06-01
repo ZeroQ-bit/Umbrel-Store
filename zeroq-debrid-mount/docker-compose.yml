@@ -1,0 +1,43 @@
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: zeroq-debrid-mount
+      APP_PORT: 8080
+      PROXY_AUTH_ADD: "false"
+
+  mount:
+    image: ghcr.io/zeroq-bit/vortexo-server:main-b81e3e5@sha256:7275b863ed8f2a42a94dba91e10081f70451e9638fd5d283150dcf75d44d823c
+    restart: on-failure
+    stop_grace_period: 1m
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - /dev/fuse:/dev/fuse
+    security_opt:
+      - apparmor:unconfined
+    environment:
+      TZ: Etc/UTC
+      DEBRID_CONFIG_DIR: /config
+      DEBRID_STATUS_DIR: /status
+      DEBRID_MOUNTPOINT: /mnt/debrid
+      DEBRID_HOST_MOUNT_PATH: ${UMBREL_ROOT}/home/Downloads/.vortexo-source
+    command:
+      - bash
+      - /usr/local/bin/debrid-mount
+    volumes:
+      - ./mount.sh:/usr/local/bin/debrid-mount:ro
+      - ${APP_DATA_DIR}/data/config:/config
+      - ${APP_DATA_DIR}/data/status:/status
+      - ${UMBREL_ROOT}/home/Downloads/.vortexo-source:/mnt/debrid:rshared
+    networks:
+      default:
+        aliases:
+          - zeroq-debrid-mount
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /status/config-needed || grep -q ' /mnt/debrid ' /proc/self/mountinfo"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s

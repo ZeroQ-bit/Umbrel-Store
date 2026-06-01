@@ -14,6 +14,8 @@ description: >-
 
   This ZeroQ package is intended to replace the stock Umbrel Plex app when you want direct integration with Vortexo Server's shared downloads library.
 
+  Install and configure Debrid Mount first so `/downloads/.vortexo-source` is owned by a dedicated rclone/zurg app instead of the Vortexo Server container.
+
   Set Plex libraries to:
   - `/downloads/vortexo/Movies`
   - `/downloads/vortexo/TV`
@@ -22,7 +24,9 @@ description: >-
   ⚠️ Because Plex still runs in host network mode on port 32400, stop the stock Plex app before installing this package. After you confirm this package imported your Plex setup correctly, you can remove the stock Plex app if you want.
 developer: Plex
 website: https://www.plex.tv/
-dependencies: []
+dependencies:
+  - zeroq-debrid-mount
+  - zeroq-streamarr-pro
 repo: ""
 support: https://www.plex.tv/
 port: 32400
@@ -37,6 +41,9 @@ torOnly: false
 permissions:
   - GPU
 releaseNotes: >-
+  Uses the standalone Debrid Mount app for `/downloads/.vortexo-source`, so Plex media stays visible when Vortexo Server is stopped or updated.
+
+
   Mounts Umbrel's shared downloads folder at `/downloads`, so Plex can scan Vortexo Server's generated library at `/downloads/vortexo`.
 
 

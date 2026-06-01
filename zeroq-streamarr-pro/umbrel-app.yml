@@ -18,10 +18,12 @@ description: >-
   1. Open Vortexo Server and create your first admin account.
   2. Add your TMDB API key in Settings.
   3. Configure your preferred Stremio addons, Debrid provider, and any live TV or Xtream sources.
-  4. For Plex, add libraries that point to `/downloads/vortexo/Movies` and `/downloads/vortexo/TV`.
+  4. Install Debrid Mount if Plex should keep media visible while Vortexo Server is stopped or updating.
+  5. For Plex, add libraries that point to `/downloads/vortexo/Movies` and `/downloads/vortexo/TV`.
 developer: ZeroQ
 website: https://github.com/ZeroQ-bit/Vortexo-Server
-dependencies: []
+dependencies:
+  - zeroq-debrid-mount
 repo: https://github.com/ZeroQ-bit/Vortexo-Server
 support: https://github.com/ZeroQ-bit/Vortexo-Server/issues
 port: 18455
@@ -30,6 +32,9 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
+  Supports the standalone Debrid Mount app as the Plex-visible source mount at `/downloads/.vortexo-source`, so Plex can keep resolving Vortexo symlinks when Vortexo Server is stopped or updated.
+
+
   Adds an optional `Add Missing Series Episodes` setting next to collections. When Debrid WebDAV imports any episode for a show, Vortexo can add missing episode rows for all seasons before and after that matched season so the stream-fill workers can complete gaps.
 
 
