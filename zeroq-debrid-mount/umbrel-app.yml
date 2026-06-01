@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-debrid-mount
 category: media
 name: Debrid Mount
-version: "1.0.0"
+version: "1.0.1"
 tagline: Stable zurg and rclone mount for Plex and Vortexo
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Server/main/streamarr-pro-ui/public/logo.png
 description: >-
@@ -30,13 +30,16 @@ repo: https://github.com/ZeroQ-bit/Umbrel-Store
 support: https://github.com/ZeroQ-bit/Umbrel-Store/issues
 port: 18777
 gallery: []
-path: ""
+path: /index.html
 defaultUsername: ""
 defaultPassword: ""
 torOnly: false
 permissions:
   - STORAGE_DOWNLOADS
 releaseNotes: >-
+  Fixes Umbrel script mounting by binding `mount.sh` from `${APP_DATA_DIR}` and mounts the shared `/downloads` parent so the rclone FUSE mount propagates correctly into Vortexo Server and Plex.
+
+
   Initial package. Adds a standalone rclone mount for TorBox/WebDAV and optional Real-Debrid zurg mode so Plex can keep resolving Vortexo symlink targets even when Vortexo Server is down.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store/pull/2

@@ -21,22 +21,22 @@ services:
       TZ: Etc/UTC
       DEBRID_CONFIG_DIR: /config
       DEBRID_STATUS_DIR: /status
-      DEBRID_MOUNTPOINT: /mnt/debrid
+      DEBRID_MOUNTPOINT: /downloads/.vortexo-source
       DEBRID_HOST_MOUNT_PATH: ${UMBREL_ROOT}/home/Downloads/.vortexo-source
     command:
       - bash
       - /usr/local/bin/debrid-mount
     volumes:
-      - ./mount.sh:/usr/local/bin/debrid-mount:ro
+      - ${APP_DATA_DIR}/mount.sh:/usr/local/bin/debrid-mount:ro
       - ${APP_DATA_DIR}/data/config:/config
       - ${APP_DATA_DIR}/data/status:/status
-      - ${UMBREL_ROOT}/home/Downloads/.vortexo-source:/mnt/debrid:rshared
+      - ${UMBREL_ROOT}/home/Downloads:/downloads:rshared
     networks:
       default:
         aliases:
           - zeroq-debrid-mount
     healthcheck:
-      test: ["CMD-SHELL", "test -f /status/config-needed || grep -q ' /mnt/debrid ' /proc/self/mountinfo"]
+      test: ["CMD-SHELL", "test -f /status/config-needed || grep -q ' /downloads/.vortexo-source ' /proc/self/mountinfo"]
       interval: 30s
       timeout: 10s
       retries: 5
