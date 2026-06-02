@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import os
 import re
@@ -58,7 +59,10 @@ def main() -> int:
 class SourceResolver:
     def __init__(self) -> None:
         self.cache: dict[str, dict[str, Any]] = {}
-        self.github_token = os.environ.get("GITHUB_TOKEN", "").strip()
+        self.github_token = (
+            os.environ.get("UPSTREAM_GITHUB_TOKEN", "").strip()
+            or os.environ.get("GITHUB_TOKEN", "").strip()
+        )
 
     def resolve(self, source: dict[str, Any]) -> dict[str, Any]:
         key = json.dumps(source, sort_keys=True)
@@ -233,7 +237,19 @@ def resolve_image_digest(repository: str, tag: str) -> str:
 
 def ghcr_digest(repo_path: str, tag: str) -> str:
     token_url = f"https://ghcr.io/token?service=ghcr.io&scope=repository:{repo_path}:pull"
-    token_request = urllib.request.Request(token_url, headers={"User-Agent": USER_AGENT})
+    token_headers = {"User-Agent": USER_AGENT}
+    github_token = (
+        os.environ.get("UPSTREAM_GITHUB_TOKEN", "").strip()
+        or os.environ.get("GITHUB_TOKEN", "").strip()
+    )
+    github_username = (
+        os.environ.get("UPSTREAM_GITHUB_USERNAME", "").strip()
+        or os.environ.get("GITHUB_ACTOR", "").strip()
+    )
+    if github_token and github_username:
+        credentials = base64.b64encode(f"{github_username}:{github_token}".encode()).decode()
+        token_headers["Authorization"] = f"Basic {credentials}"
+    token_request = urllib.request.Request(token_url, headers=token_headers)
     with urllib.request.urlopen(token_request) as response:
         token = json.load(response)["token"]
 
@@ -303,4 +319,10 @@ if __name__ == "__main__":
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace")
         print(f"HTTP error {exc.code} while fetching {exc.url}\n{body}", file=sys.stderr)
+        if "api.github.com/repos/" in exc.url and exc.code in {403, 404}:
+            print(
+                "If this upstream repository is private, add an UPSTREAM_GITHUB_TOKEN "
+                "repository secret with read access to that repo.",
+                file=sys.stderr,
+            )
         raise

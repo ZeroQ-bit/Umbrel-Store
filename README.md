@@ -232,8 +232,16 @@ The updater:
 
 The tracked apps and their update rules live in `scripts/store-update-config.json`.
 
+If any configured upstream repo is private, add an Actions repository secret named
+`UPSTREAM_GITHUB_TOKEN`. Use a fine-grained GitHub token from an account that can
+read the private upstream repo, with read-only `Contents` access. If the matching
+GHCR package is also private, give the token package read access and optionally
+add `UPSTREAM_GITHUB_USERNAME` for the token owner. The workflow still uses the
+built-in `GITHUB_TOKEN` to commit changes back to this store.
+
 Current sources:
 
+- `zeroq-vortexo-bridge`: latest commit on `ZeroQ-bit/Vortexo_Server` `main`, mapped to `ghcr.io/zeroq-bit/vortexo_server:main`
 - `zeroq-streamarr-pro`: latest commit on `ZeroQ-bit/Vortexo-Server` `main`, mapped to `ghcr.io/zeroq-bit/vortexo-server:main-<sha7>`
 - `zeroq-plex`: latest matching LinuxServer Plex Docker Hub tag and digest
 - `zeroq-plextraktsync`: latest Git tag from `Taxel/PlexTraktSync` and matching GHCR digest

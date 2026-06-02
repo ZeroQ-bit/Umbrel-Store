@@ -29,6 +29,8 @@ jobs:
 
       - name: Run updater
         env:
+          UPSTREAM_GITHUB_TOKEN: ${{ secrets.UPSTREAM_GITHUB_TOKEN }}
+          UPSTREAM_GITHUB_USERNAME: ${{ secrets.UPSTREAM_GITHUB_USERNAME || github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 scripts/update_store_apps.py --write
 
