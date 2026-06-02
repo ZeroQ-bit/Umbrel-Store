@@ -33,6 +33,6 @@ defaultPassword: "vortexo"
 torOnly: false
 permissions: []
 releaseNotes: >-
-  Fixes manifest show detail loading by keeping IMDb IDs stable for series hierarchy requests, rewrites old Cinemeta manifest hosts to the working host, and adds compatibility responses for optional Vortexo app probes.
+  Exposes Stremio/Cinemeta trailers through the Vortexo video endpoints so the Apple TV trailer button can play manifest-backed movie and show trailers.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store
