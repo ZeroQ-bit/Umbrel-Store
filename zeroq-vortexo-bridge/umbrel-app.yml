@@ -2,9 +2,9 @@ manifestVersion: 1
 id: zeroq-vortexo-bridge
 category: media
 name: Vortexo Manifest Server
-version: "main-3a9769a"
+version: "main-d165327"
 tagline: Clean manifest-powered backend for Vortexo Apple TV
-icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Server/main/streamarr-pro-ui/public/logo.png
+icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Manifest-Server/main/icon.svg
 description: >-
   Vortexo Manifest Server is a clean Vortexo backend that starts empty and becomes useful when you install Stremio-compatible manifests.
 
@@ -21,10 +21,10 @@ description: >-
   4. Paste your AIOStreams manifest URL for playback sources.
   5. In the Vortexo Apple TV app, enable Vortexo Server and connect to this Umbrel app URL with the same username and password.
 developer: ZeroQ
-website: https://github.com/ZeroQ-bit/Vortexo_Server
+website: https://github.com/ZeroQ-bit/Vortexo-Manifest-Server
 dependencies: []
-repo: https://github.com/ZeroQ-bit/Vortexo_Server
-support: https://github.com/ZeroQ-bit/Vortexo_Server/issues
+repo: https://github.com/ZeroQ-bit/Vortexo-Manifest-Server
+support: https://github.com/ZeroQ-bit/Vortexo-Manifest-Server/issues
 port: 18456
 gallery: []
 path: ""

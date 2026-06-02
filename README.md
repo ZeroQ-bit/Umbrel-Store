@@ -241,8 +241,7 @@ built-in `GITHUB_TOKEN` to commit changes back to this store.
 
 Current sources:
 
-- `zeroq-vortexo-bridge`: latest commit on `ZeroQ-bit/Vortexo_Server` `main`, mapped to `ghcr.io/zeroq-bit/vortexo_server:main`
-- `zeroq-streamarr-pro`: latest commit on `ZeroQ-bit/Vortexo-Server` `main`, mapped to `ghcr.io/zeroq-bit/vortexo-server:main-<sha7>`
+- `zeroq-vortexo-bridge`: latest commit on `ZeroQ-bit/Vortexo-Manifest-Server` `main`, mapped to `ghcr.io/zeroq-bit/vortexo-manifest-server:main`
 - `zeroq-plex`: latest matching LinuxServer Plex Docker Hub tag and digest
 - `zeroq-plextraktsync`: latest Git tag from `Taxel/PlexTraktSync` and matching GHCR digest
 

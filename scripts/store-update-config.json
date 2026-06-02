@@ -6,42 +6,19 @@
       "manifest_version_format": "{tag}",
       "manifest_version_source": {
         "type": "github_branch_head",
-        "repo": "ZeroQ-bit/Vortexo_Server",
+        "repo": "ZeroQ-bit/Vortexo-Manifest-Server",
         "branch": "main",
         "tag_format": "main-{sha7}"
       },
       "images": [
         {
           "compose_path": "zeroq-vortexo-bridge/docker-compose.yml",
-          "repository": "ghcr.io/zeroq-bit/vortexo_server",
+          "repository": "ghcr.io/zeroq-bit/vortexo-manifest-server",
           "source": {
             "type": "github_branch_head",
-            "repo": "ZeroQ-bit/Vortexo_Server",
+            "repo": "ZeroQ-bit/Vortexo-Manifest-Server",
             "branch": "main",
             "tag_format": "main"
-          }
-        }
-      ]
-    },
-    {
-      "id": "zeroq-streamarr-pro",
-      "manifest_path": "zeroq-streamarr-pro/umbrel-app.yml",
-      "manifest_version_format": "{tag}-tvdb3",
-      "manifest_version_source": {
-        "type": "github_branch_head",
-        "repo": "ZeroQ-bit/Vortexo-Server",
-        "branch": "main",
-        "tag_format": "main-{sha7}"
-      },
-      "images": [
-        {
-          "compose_path": "zeroq-streamarr-pro/docker-compose.yml",
-          "repository": "ghcr.io/zeroq-bit/vortexo-server",
-          "source": {
-            "type": "github_branch_head",
-            "repo": "ZeroQ-bit/Vortexo-Server",
-            "branch": "main",
-            "tag_format": "main-{sha7}"
           }
         }
       ]
