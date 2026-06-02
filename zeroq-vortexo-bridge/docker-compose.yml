@@ -8,7 +8,7 @@ services:
       PROXY_AUTH_ADD: "false"
 
   server:
-    image: ghcr.io/zeroq-bit/vortexo_server:main@sha256:32279c97826c208b0bb4338a074b01f4de969d437a1c2d1602b39a6583e19ac9
+    image: ghcr.io/zeroq-bit/vortexo_server:main@sha256:932a2d16e503f890866037c8a8844aa20b5ceabbc0ed2ac2e03acd5b746ec8c3
     restart: on-failure
     stop_grace_period: 30s
     environment:
