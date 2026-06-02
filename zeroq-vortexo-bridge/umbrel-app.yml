@@ -33,6 +33,6 @@ defaultPassword: "vortexo"
 torOnly: false
 permissions: []
 releaseNotes: >-
-  Initial clean manifest bridge for Vortexo Apple TV. The server starts empty, lets you install Stremio-compatible manifests from the web dashboard, and exposes Vortexo-compatible Home, source, and playback endpoints without requiring Apple TV app changes.
+  Fixes manifest show detail loading by keeping IMDb IDs stable for series hierarchy requests, rewrites old Cinemeta manifest hosts to the working host, and adds compatibility responses for optional Vortexo app probes.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store
