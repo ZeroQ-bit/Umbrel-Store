@@ -99,6 +99,12 @@ unmount_existing() {
   fi
 }
 
+enable_fuse_allow_other() {
+  if [[ -w /etc/fuse.conf ]] && ! grep -q '^[[:space:]]*user_allow_other' /etc/fuse.conf; then
+    echo user_allow_other >> /etc/fuse.conf
+  fi
+}
+
 write_webdav_rclone_config() {
   if [[ -z "${DEBRID_WEBDAV_USER:-}" || -z "${DEBRID_WEBDAV_PASS:-}" ]]; then
     sleep_until_configured
@@ -181,6 +187,7 @@ set -a
 set +a
 
 DEBRID_MODE="$(printf '%s' "${DEBRID_MODE:-webdav}" | tr '[:upper:]' '[:lower:]')"
+enable_fuse_allow_other
 unmount_existing
 write_status "Mounting" "Starting ${DEBRID_MODE} debrid mount. Plex can keep using mounted media even when Vortexo Server is stopped." "mounting"
 

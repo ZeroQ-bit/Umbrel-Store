@@ -2,9 +2,9 @@ manifestVersion: 1
 id: zeroq-debrid-mount
 category: media
 name: Debrid Mount
-version: "1.0.1"
+version: "1.0.2"
 tagline: Stable zurg and rclone mount for Plex and Vortexo
-icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Server/main/streamarr-pro-ui/public/logo.png
+icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Manifest-Server/main/icon.svg
 description: >-
   Debrid Mount runs rclone as its own Umbrel app so Plex does not lose media when Vortexo Server is stopped or updated.
 
@@ -37,6 +37,9 @@ torOnly: false
 permissions:
   - STORAGE_DOWNLOADS
 releaseNotes: >-
+  Fixes installation by replacing the old private Vortexo Server container image with a public pinned debrid mount image, using Umbrel's expected container DNS name for the app proxy, and enabling FUSE allow_other before rclone starts.
+
+
   Fixes Umbrel script mounting by binding `mount.sh` from `${APP_DATA_DIR}` and mounts the shared `/downloads` parent so the rclone FUSE mount propagates correctly into Vortexo Server and Plex.
 
 

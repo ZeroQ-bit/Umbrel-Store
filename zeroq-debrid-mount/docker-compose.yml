@@ -3,12 +3,12 @@ version: "3.7"
 services:
   app_proxy:
     environment:
-      APP_HOST: zeroq-debrid-mount
+      APP_HOST: zeroq-debrid-mount_mount_1
       APP_PORT: 8080
       PROXY_AUTH_ADD: "false"
 
   mount:
-    image: ghcr.io/zeroq-bit/vortexo-server:main-b81e3e5@sha256:7275b863ed8f2a42a94dba91e10081f70451e9638fd5d283150dcf75d44d823c
+    image: iampuid0/pd_zurg:2.9.2@sha256:48ab5705e23e9afa511611aed47107b79b5c3d3ab0ff039720068b3f66ded374
     restart: on-failure
     stop_grace_period: 1m
     cap_add:
@@ -23,8 +23,8 @@ services:
       DEBRID_STATUS_DIR: /status
       DEBRID_MOUNTPOINT: /downloads/.vortexo-source
       DEBRID_HOST_MOUNT_PATH: ${UMBREL_ROOT}/home/Downloads/.vortexo-source
-    command:
-      - bash
+    entrypoint:
+      - /bin/bash
       - /usr/local/bin/debrid-mount
     volumes:
       - ${APP_DATA_DIR}/mount.sh:/usr/local/bin/debrid-mount:ro
