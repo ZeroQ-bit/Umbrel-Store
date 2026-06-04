@@ -24,7 +24,7 @@ services:
       DEBRID_MOUNTPOINT: /downloads/.vortexo-source
       DEBRID_HOST_MOUNT_PATH: ${UMBREL_ROOT}/home/Downloads/.vortexo-source
     entrypoint:
-      - /bin/bash
+      - /bin/sh
       - /usr/local/bin/debrid-mount
     volumes:
       - ${APP_DATA_DIR}/mount.sh:/usr/local/bin/debrid-mount:ro

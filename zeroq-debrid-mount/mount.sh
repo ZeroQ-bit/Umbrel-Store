@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
-set -Eeuo pipefail
+#!/bin/sh
+set -eu
 
 CONFIG_DIR="${DEBRID_CONFIG_DIR:-/config}"
 STATUS_DIR="${DEBRID_STATUS_DIR:-/status}"
@@ -12,12 +12,12 @@ ZURG_CONFIG="${CONFIG_DIR}/zurg.yml"
 mkdir -p "${CONFIG_DIR}" "${STATUS_DIR}" "${MOUNTPOINT}" "${CONFIG_DIR}/rclone-cache"
 
 write_status() {
-  local title="$1"
-  local detail="$2"
-  local marker="${3:-}"
+  title="$1"
+  detail="$2"
+  marker="${3:-}"
 
   rm -f "${STATUS_DIR}/config-needed" "${STATUS_DIR}/ready" "${STATUS_DIR}/mounting"
-  if [[ -n "${marker}" ]]; then
+  if [ -n "${marker}" ]; then
     touch "${STATUS_DIR}/${marker}"
   fi
 
@@ -55,7 +55,7 @@ EOF
 }
 
 write_sample_config() {
-  if [[ -f "${CONFIG_FILE}" ]]; then
+  if [ -f "${CONFIG_FILE}" ]; then
     return
   fi
 
@@ -100,17 +100,16 @@ unmount_existing() {
 }
 
 enable_fuse_allow_other() {
-  if [[ -w /etc/fuse.conf ]] && ! grep -q '^[[:space:]]*user_allow_other' /etc/fuse.conf; then
+  if [ -w /etc/fuse.conf ] && ! grep -q '^[[:space:]]*user_allow_other' /etc/fuse.conf; then
     echo user_allow_other >> /etc/fuse.conf
   fi
 }
 
 write_webdav_rclone_config() {
-  if [[ -z "${DEBRID_WEBDAV_USER:-}" || -z "${DEBRID_WEBDAV_PASS:-}" ]]; then
+  if [ -z "${DEBRID_WEBDAV_USER:-}" ] || [ -z "${DEBRID_WEBDAV_PASS:-}" ]; then
     sleep_until_configured
   fi
 
-  local obscured_pass
   obscured_pass="$(rclone obscure "${DEBRID_WEBDAV_PASS}")"
   cat > "${RCLONE_CONFIG}" <<EOF
 [debrid]
@@ -124,10 +123,10 @@ EOF
 }
 
 write_default_zurg_config() {
-  if [[ -f "${ZURG_CONFIG}" ]]; then
+  if [ -f "${ZURG_CONFIG}" ]; then
     return
   fi
-  if [[ -z "${DEBRID_ZURG_TOKEN:-}" ]]; then
+  if [ -z "${DEBRID_ZURG_TOKEN:-}" ]; then
     sleep_until_configured
   fi
 
@@ -156,7 +155,7 @@ EOF
 }
 
 wait_for_zurg() {
-  local port="${DEBRID_ZURG_PORT:-9999}"
+  port="${DEBRID_ZURG_PORT:-9999}"
   for _ in $(seq 1 60); do
     if wget -q -O /dev/null "http://127.0.0.1:${port}/dav/version.txt"; then
       return 0
@@ -168,7 +167,7 @@ wait_for_zurg() {
 }
 
 write_zurg_rclone_config() {
-  local port="${DEBRID_ZURG_PORT:-9999}"
+  port="${DEBRID_ZURG_PORT:-9999}"
   cat > "${RCLONE_CONFIG}" <<EOF
 [debrid]
 type = webdav
