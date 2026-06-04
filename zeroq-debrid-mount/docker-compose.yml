@@ -3,11 +3,11 @@ version: "3.7"
 services:
   app_proxy:
     environment:
-      APP_HOST: zeroq-debrid-mount_mount_1
+      APP_HOST: zeroq-debrid-mount_server_1
       APP_PORT: 8080
       PROXY_AUTH_ADD: "false"
 
-  mount:
+  server:
     image: iampuid0/pd_zurg:2.9.2@sha256:48ab5705e23e9afa511611aed47107b79b5c3d3ab0ff039720068b3f66ded374
     restart: on-failure
     stop_grace_period: 1m

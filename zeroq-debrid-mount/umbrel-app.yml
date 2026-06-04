@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-debrid-mount
 category: media
 name: Debrid Mount
-version: "1.0.2"
+version: "1.0.3"
 tagline: Stable zurg and rclone mount for Plex and Vortexo
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Manifest-Server/main/icon.svg
 description: >-
@@ -37,6 +37,9 @@ torOnly: false
 permissions:
   - STORAGE_DOWNLOADS
 releaseNotes: >-
+  Fixes failed reinstall/install attempts caused by a stale Docker container named `zeroq-debrid-mount_mount_1` left behind by an earlier failed install.
+
+
   Fixes installation by replacing the old private Vortexo Server container image with a public pinned debrid mount image, using Umbrel's expected container DNS name for the app proxy, and enabling FUSE allow_other before rclone starts.
 
 
