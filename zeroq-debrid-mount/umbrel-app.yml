@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-debrid-mount
 category: media
 name: Debrid Mount
-version: "1.0.4"
+version: "1.0.5"
 tagline: Stable zurg and rclone mount for Plex and Vortexo
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Manifest-Server/main/icon.svg
 description: >-
@@ -37,6 +37,9 @@ torOnly: false
 permissions:
   - STORAGE_DOWNLOADS
 releaseNotes: >-
+  Fixes reinstall/startup when a stale FUSE mount leaves `/downloads/.vortexo-source` in a "Socket not connected" state.
+
+
   Fixes startup in the public debrid mount image by running the mount script with `/bin/sh` and keeping the script POSIX-shell compatible.
 
 

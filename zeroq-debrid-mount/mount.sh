@@ -9,7 +9,7 @@ CONFIG_FILE="${CONFIG_DIR}/debrid.env"
 RCLONE_CONFIG="${CONFIG_DIR}/rclone.conf"
 ZURG_CONFIG="${CONFIG_DIR}/zurg.yml"
 
-mkdir -p "${CONFIG_DIR}" "${STATUS_DIR}" "${MOUNTPOINT}" "${CONFIG_DIR}/rclone-cache"
+mkdir -p "${CONFIG_DIR}" "${STATUS_DIR}" "${CONFIG_DIR}/rclone-cache"
 
 write_status() {
   title="$1"
@@ -94,9 +94,29 @@ sleep_until_configured() {
 }
 
 unmount_existing() {
-  if grep -q " ${MOUNTPOINT} " /proc/self/mountinfo; then
+  if grep -q " ${MOUNTPOINT} " /proc/self/mountinfo || ! ls -ld "${MOUNTPOINT}" >/dev/null 2>&1; then
     fusermount3 -uz "${MOUNTPOINT}" 2>/dev/null || fusermount -uz "${MOUNTPOINT}" 2>/dev/null || umount -l "${MOUNTPOINT}" 2>/dev/null || true
   fi
+}
+
+prepare_mountpoint() {
+  unmount_existing
+  if mkdir -p "${MOUNTPOINT}" 2>/tmp/debrid-mount-mkdir.err; then
+    rm -f /tmp/debrid-mount-mkdir.err
+    return 0
+  fi
+
+  if grep -qi 'socket not connected\|transport endpoint' /tmp/debrid-mount-mkdir.err 2>/dev/null; then
+    fusermount3 -uz "${MOUNTPOINT}" 2>/dev/null || fusermount -uz "${MOUNTPOINT}" 2>/dev/null || umount -l "${MOUNTPOINT}" 2>/dev/null || true
+    rm -rf "${MOUNTPOINT}" 2>/dev/null || true
+    mkdir -p "${MOUNTPOINT}"
+    rm -f /tmp/debrid-mount-mkdir.err
+    return 0
+  fi
+
+  cat /tmp/debrid-mount-mkdir.err >&2
+  rm -f /tmp/debrid-mount-mkdir.err
+  return 1
 }
 
 enable_fuse_allow_other() {
@@ -187,7 +207,7 @@ set +a
 
 DEBRID_MODE="$(printf '%s' "${DEBRID_MODE:-webdav}" | tr '[:upper:]' '[:lower:]')"
 enable_fuse_allow_other
-unmount_existing
+prepare_mountpoint
 write_status "Mounting" "Starting ${DEBRID_MODE} debrid mount. Plex can keep using mounted media even when Vortexo Server is stopped." "mounting"
 
 case "${DEBRID_MODE}" in
