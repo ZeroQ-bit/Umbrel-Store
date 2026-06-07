@@ -2,7 +2,7 @@ manifestVersion: 1
 id: zeroq-vortexo-bridge
 category: media
 name: Vortexo Manifest Server
-version: "main-db2eba8"
+version: "main-89743d7"
 tagline: Clean manifest-powered backend for Vortexo Apple TV
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Manifest-Server/main/icon.svg
 description: >-
