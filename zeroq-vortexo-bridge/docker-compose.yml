@@ -16,6 +16,11 @@ services:
       VORTEXO_DATA_DIR: /data
       VORTEXO_ADMIN_USERNAME: vortexo
       VORTEXO_ADMIN_PASSWORD: vortexo
+      # Optional: set this through Umbrel environment to enable Plex-backed trailers.
+      VORTEXO_PLEX_TOKEN: "${VORTEXO_PLEX_TOKEN:-}"
+      # Allow Vortexo Apple TV to read watch-state/continue-watching without
+      # server-side credential exchange.
+      VORTEXO_PUBLIC_WATCH_STATE: "true"
       TZ: Etc/UTC
     volumes:
       - ${APP_DATA_DIR}/data:/data

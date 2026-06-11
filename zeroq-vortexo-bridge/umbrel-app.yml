@@ -34,5 +34,6 @@ torOnly: false
 permissions: []
 releaseNotes: >-
   Exposes Stremio/Cinemeta trailers through the Vortexo video endpoints so the Apple TV trailer button can play manifest-backed movie and show trailers.
+  Watch-state is also exposed for continue-watching without server auth so Apple TV can populate Continue Watching immediately after install.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store
