@@ -13,7 +13,7 @@ services:
       - ${APP_DATA_DIR}/data/web:/usr/share/nginx/html:ro
 
   api:
-    image: ghcr.io/taxel/plextraktsync:0.35.7@sha256:d210acddb9e08f34829ac42965db7b3726ed070acd119c25bc8612a08b4bfdc3
+    image: ghcr.io/taxel/plextraktsync:0.35.8@sha256:c7c1474f2d5a2517cdf0a99c22ca0fba770fd6e98fe0efcd4b01af660828802a
     command:
       - sh
       - -c
