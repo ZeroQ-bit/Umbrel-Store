@@ -42,8 +42,12 @@ def main() -> int:
     changes: list[str] = []
 
     for app in config["apps"]:
-        app_changes = process_app(repo_root, app, resolver, write=args.write)
-        changes.extend(app_changes)
+        try:
+            app_changes = process_app(repo_root, app, resolver, write=args.write)
+            changes.extend(app_changes)
+        except Exception as e:
+            # Don't let one app's upstream outage block the whole store.
+            print(f"WARNING: skipped app '{app.get('id', '?')}': {e}", file=sys.stderr)
 
     if changes:
         mode = "Updated" if args.write else "Planned"
