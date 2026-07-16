@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-plex-debrid
 category: media
 name: plex_debrid
-version: "2.95.0-zeroq2"
+version: "2.95.0-zeroq3"
 tagline: Automated TorBox/Real-Debrid downloads from your Plex/Trakt watchlists
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Manifest-Server/main/icon.svg
 description: >-
@@ -57,16 +57,20 @@ torOnly: false
 permissions:
   - STORAGE_DOWNLOADS
 releaseNotes: >-
-  Web UI improvements:
+  Critical fixes for the automation pipeline:
 
+  - Plex watchlist now read via GraphQL API (community.plex.tv/api) — the
+    legacy REST endpoint is deprecated and returned 404 for all accounts.
+    Verified: returns all watchlist items reliably.
+  - Scraper sources must be lowercase (plex_debrid compares case-sensitively).
+    Capitalized 'Torrentio' matched no module → 0 releases scraped. Fixed.
+  - Library section check: normalize key types so string-form keys ('4','5')
+    match. Without this, len(library)==0 and the engine skipped all processing.
+  - Watchlist update loop: compare by ratingKey to avoid re-discovering all
+    items every poll cycle (caused an infinite scan loop).
+  - Token round-trip: preserve the Plex/Trakt token across load/save so
+    saving settings doesn't disconnect the account.
   - TorBox auth via Bearer header (was query param — 401 on valid keys).
-  - Full Plex client headers for the PIN flow so the watchlist token has
-    Discover scope (fixes 'Section watchlist not found').
-  - Complete settings: all 51 plex_debrid settings exposed (was 36), including
-    Trakt lists/auto-remove/library users, Plex refresh sections, Jellyfin.
-  - Auto-discover Plex library sections (Refresh + Check) — no manual numbers.
-  - Default '1080p SDR' quality preset shown by default, including the
-    cache-status rule so only already-cached torrents are accepted.
-  - Content Services selector drives section visibility.
+  - Auto-discover Plex library sections, default quality preset, full settings.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store/pull/7
