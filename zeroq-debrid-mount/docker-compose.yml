@@ -28,6 +28,7 @@ services:
       - /usr/local/bin/debrid-mount
     volumes:
       - ${APP_DATA_DIR}/mount.sh:/usr/local/bin/debrid-mount:ro
+      - ${APP_DATA_DIR}/web_ui.py:/usr/local/bin/web_ui.py:ro
       - ${APP_DATA_DIR}/data/config:/config
       - ${APP_DATA_DIR}/data/status:/status
       - ${UMBREL_ROOT}/home/Downloads:/downloads:rshared
@@ -36,7 +37,7 @@ services:
         aliases:
           - zeroq-debrid-mount
     healthcheck:
-      test: ["CMD-SHELL", "test -f /status/config-needed || grep -q ' /downloads/.vortexo-source ' /proc/self/mountinfo"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5

@@ -2,8 +2,8 @@ manifestVersion: 1
 id: zeroq-debrid-mount
 category: media
 name: Debrid Mount
-version: "1.0.5"
-tagline: Stable zurg and rclone mount for Plex and Vortexo
+version: "1.1.0"
+tagline: TorBox/Real-Debrid mount for Plex and Vortexo, configured in the browser
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Manifest-Server/main/icon.svg
 description: >-
   Debrid Mount runs rclone as its own Umbrel app so Plex does not lose media when Vortexo Server is stopped or updated.
@@ -12,17 +12,16 @@ description: >-
   It defaults to TorBox/WebDAV mode and can also run Real-Debrid through zurg plus rclone.
 
 
-  SET-UP INSTRUCTIONS
+  Now with a built-in Web UI — configure everything from the browser, no SSH required:
 
 
-  1. Install Debrid Mount and open the app once.
-  2. Edit the generated config file at `app-data/zeroq-debrid-mount/data/config/debrid.env`.
-  3. For TorBox, keep `DEBRID_MODE='webdav'` and add your TorBox WebDAV username/password.
-  4. For Real-Debrid, set `DEBRID_MODE='zurg'` and add `DEBRID_ZURG_TOKEN`.
-  5. Restart Debrid Mount.
-  6. In Vortexo Server, keep the Debrid WebDAV Library scanner enabled but turn off Vortexo's own WebDAV mount toggle.
-  7. Keep Vortexo's source path at `/downloads/.vortexo-source` and clean symlink library at `/downloads/vortexo`.
-  8. In Plex, keep libraries pointed at `/downloads/vortexo/Movies` and `/downloads/vortexo/TV`.
+  1. Install Debrid Mount and open the app.
+  2. Pick your debrid mode (TorBox WebDAV or Real-Debrid zurg).
+  3. Enter your TorBox WebDAV username/password (from TorBox → Settings → WebDAV) and click Test.
+  4. Click Save & Mount.
+  5. In Vortexo Server, keep the Debrid WebDAV Library scanner enabled but turn off Vortexo's own WebDAV mount toggle.
+  6. Keep Vortexo's source path at `/downloads/.vortexo-source` and clean symlink library at `/downloads/vortexo`.
+  7. In Plex, keep libraries pointed at `/downloads/vortexo/Movies` and `/downloads/vortexo/TV`.
 developer: ZeroQ
 website: https://github.com/ZeroQ-bit/Umbrel-Store
 dependencies: []
@@ -37,19 +36,10 @@ torOnly: false
 permissions:
   - STORAGE_DOWNLOADS
 releaseNotes: >-
-  Fixes reinstall/startup when a stale FUSE mount leaves `/downloads/.vortexo-source` in a "Socket not connected" state.
-
-
-  Fixes startup in the public debrid mount image by running the mount script with `/bin/sh` and keeping the script POSIX-shell compatible.
-
-
-  Fixes failed reinstall/install attempts caused by a stale Docker container named `zeroq-debrid-mount_mount_1` left behind by an earlier failed install.
-
-
-  Fixes installation by replacing the old private Vortexo Server container image with a public pinned debrid mount image, using Umbrel's expected container DNS name for the app proxy, and enabling FUSE allow_other before rclone starts.
-
-
-  Fixes Umbrel script mounting by binding `mount.sh` from `${APP_DATA_DIR}` and mounts the shared `/downloads` parent so the rclone FUSE mount propagates correctly into Vortexo Server and Plex.
+  Adds a built-in Web UI for configuring the mount from the browser — no more
+  SSH to edit debrid.env. Set TorBox WebDAV creds (or Real-Debrid zurg token),
+  test the connection with one click, and mount/unmount/restart from the page.
+  Live status pill + rclone log tail included.
 
 
   Initial package. Adds a standalone rclone mount for TorBox/WebDAV and optional Real-Debrid zurg mode so Plex can keep resolving Vortexo symlink targets even when Vortexo Server is down.
