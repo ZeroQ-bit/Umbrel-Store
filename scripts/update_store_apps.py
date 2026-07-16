@@ -153,8 +153,19 @@ class SourceResolver:
         if github_api and self.github_token:
             headers["Authorization"] = f"Bearer {self.github_token}"
         request = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(request) as response:
-            return json.load(response)
+        # Retry on transient errors (503, 429, timeouts) — GitHub's API
+        # occasionally returns 503 "Unicorn" errors that resolve on retry.
+        import time as _time
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                with urllib.request.urlopen(request, timeout=30) as response:
+                    return json.load(response)
+            except urllib.error.HTTPError as e:
+                if e.code in (503, 429, 502) and attempt < max_retries - 1:
+                    _time.sleep(5 * (attempt + 1))
+                    continue
+                raise
 
 
 def process_app(
