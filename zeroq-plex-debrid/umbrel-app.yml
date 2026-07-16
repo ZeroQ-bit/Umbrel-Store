@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-plex-debrid
 category: media
 name: plex_debrid
-version: "2.95.0-zeroq1"
+version: "2.95.0-zeroq2"
 tagline: Automated TorBox/Real-Debrid downloads from your Plex/Trakt watchlists
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Manifest-Server/main/icon.svg
 description: >-
@@ -57,7 +57,16 @@ torOnly: false
 permissions:
   - STORAGE_DOWNLOADS
 releaseNotes: >-
-  Initial release. Bundles plex_debrid v2.95 with a custom TorBox debrid
-  provider and a Web UI for configuring all settings from the browser.
+  Web UI improvements:
+
+  - TorBox auth via Bearer header (was query param — 401 on valid keys).
+  - Full Plex client headers for the PIN flow so the watchlist token has
+    Discover scope (fixes 'Section watchlist not found').
+  - Complete settings: all 51 plex_debrid settings exposed (was 36), including
+    Trakt lists/auto-remove/library users, Plex refresh sections, Jellyfin.
+  - Auto-discover Plex library sections (Refresh + Check) — no manual numbers.
+  - Default '1080p SDR' quality preset shown by default, including the
+    cache-status rule so only already-cached torrents are accepted.
+  - Content Services selector drives section visibility.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store/pull/7
