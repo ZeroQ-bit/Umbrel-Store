@@ -1,0 +1,63 @@
+manifestVersion: 1.1
+id: zeroq-plex-debrid
+category: media
+name: plex_debrid
+version: "2.95.0-zeroq1"
+tagline: Automated TorBox/Real-Debrid downloads from your Plex/Trakt watchlists
+icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Manifest-Server/main/icon.svg
+description: >-
+  plex_debrid watches your Plex Watchlist, Trakt, and Overseerr for new movies
+  and shows, scrapes the best matching torrent, and sends it straight to your
+  debrid provider's cloud — no manual downloading, no SSH.
+
+
+  This package bundles the plex_debrid automation engine (itsToggle v2.95) with
+  a custom TorBox provider and a full Web UI so you can configure everything
+  from the browser: debrid services and API keys, content sources, library
+  refresh settings, scrapers, and quality rules, plus a live engine log.
+
+
+  TorBox support is added by ZeroQ — upstream plex_debrid does not include it.
+
+
+  IMPORTANT — what this app does and does not do:
+
+  • plex_debrid only adds torrents to your debrid cloud and triggers a Plex
+    library scan. It does NOT mount anything.
+
+  • For Plex to actually stream the media, keep the separate "Debrid Mount"
+    app running — it provides the TorBox/Real-Debrid filesystem that plex_debrid
+    fills and Plex reads.
+
+
+  SET-UP
+
+  1. Install "Debrid Mount" first and confirm it mounts (Ready status).
+
+  2. Install and open "plex_debrid".
+
+  3. In the Web UI, enter your TorBox API Key and click Test.
+
+  4. Add your Plex token / Trakt / Overseerr details under Content Sources.
+
+  5. Add at least one Scraper (e.g. Torrentio).
+
+  6. Save & Restart. The engine now polls your watchlists automatically.
+developer: ZeroQ
+website: https://github.com/ZeroQ-bit/Umbrel-Store
+dependencies: []
+repo: https://github.com/ZeroQ-bit/Umbrel-Store
+support: https://github.com/ZeroQ-bit/Umbrel-Store/issues
+port: 19456
+gallery: []
+path: ""
+defaultUsername: ""
+defaultPassword: ""
+torOnly: false
+permissions:
+  - STORAGE_DOWNLOADS
+releaseNotes: >-
+  Initial release. Bundles plex_debrid v2.95 with a custom TorBox debrid
+  provider and a Web UI for configuring all settings from the browser.
+submitter: ZeroQ
+submission: https://github.com/ZeroQ-bit/Umbrel-Store/pull/7
