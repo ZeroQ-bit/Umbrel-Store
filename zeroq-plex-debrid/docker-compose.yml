@@ -19,9 +19,17 @@ services:
       PD_CONFIG_DIR: /config
       PD_LOG_DIR: /logs
       PD_WEB_PORT: "8080"
+      # Library symlinker: shared downloads bind (matches zeroq-plex and
+      # zeroq-debrid-mount) so the symlinker can read the raw mount and write
+      # {tmdb-ID} symlinks into the Plex library.
+      PD_DOWNLOADS_DIR: /downloads
+      PD_VORTEXO_SOURCE_DIR: /downloads/.vortexo-source
+      PD_LIBRARY_MOVIES_DIR: /downloads/vortexo/Movies
+      PD_LIBRARY_TV_DIR: /downloads/vortexo/TV
     volumes:
       - ${APP_DATA_DIR}/config:/config
       - ${APP_DATA_DIR}/logs:/logs
+      - ${UMBREL_ROOT}/home/Downloads:/downloads:rslave
     networks:
       default:
         aliases:

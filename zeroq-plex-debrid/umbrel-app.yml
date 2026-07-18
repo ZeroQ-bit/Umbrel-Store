@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-plex-debrid
 category: media
 name: plex_debrid
-version: "2.95.0-zeroq6"
+version: "2.95.0-zeroq7"
 tagline: Automated TorBox/Real-Debrid downloads from your Plex/Trakt watchlists
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Manifest-Server/main/icon.svg
 description: >-
@@ -45,7 +45,7 @@ description: >-
   6. Save & Restart. The engine now polls your watchlists automatically.
 developer: ZeroQ
 website: https://github.com/ZeroQ-bit/Umbrel-Store
-dependencies: []
+dependencies: ["zeroq-debrid-mount"]
 repo: https://github.com/ZeroQ-bit/Umbrel-Store
 support: https://github.com/ZeroQ-bit/Umbrel-Store/issues
 port: 19456
@@ -57,15 +57,20 @@ torOnly: false
 permissions:
   - STORAGE_DOWNLOADS
 releaseNotes: >-
-  Fixes Torrentio scraping — the main blocker for downloads:
+  Adds a library symlinker so newly-downloaded media actually appears in Plex:
 
-  - Torrentio is behind Cloudflare, which blocks python-requests' default
-    User-Agent with HTTP 403. Added a browser UA so scrapes pass through.
-    This is why Stremio found links but plex_debrid returned 0 releases.
-  - Verified live: browser UA → 200 + 5 streams; default UA → 403.
+  - After each download, plex_debrid now creates a {tmdb-ID}/{tvdb-ID} symlink
+    in the Plex library pointing at the Debrid Mount, in the exact format Plex
+    expects. A periodic background sweep reconciles the library against TorBox
+    and retroactively fills anything missing.
+  - Mounts the shared /downloads folder (matching the Plex app) so the
+    symlinker can read the raw mount and write into the library; now depends
+    on the Debrid Mount app.
+  - Configurable from the Web UI (Library Symlinker section): enable, sweep
+    interval, mount/library paths.
 
-  Also includes all prior fixes: GraphQL watchlist, lowercase scraper sources,
-  library section check, watchlist loop, token round-trip, TorBox Bearer auth.
-  - Auto-discover Plex library sections, default quality preset, full settings.
+  Also fixes the TorBox download handoff (requestdl needs token= param) and
+  deviation-regex matching (empty Special character renaming config wiped
+  space->dot conversion). Includes all prior fixes.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store/pull/7
