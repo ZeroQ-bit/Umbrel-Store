@@ -9,9 +9,9 @@ services:
       PROXY_AUTH_ADD: "true"
 
   server:
-    # NOTE: pin with @sha256 once CI publishes the first image. Until then
-    # the :main tag tracks the latest build off the default branch.
-    image: ghcr.io/zeroq-bit/plex_debrid:main
+    # Keep the readable branch tag while pinning the exact tested image that
+    # corresponds to the Umbrel app version below.
+    image: ghcr.io/zeroq-bit/plex_debrid:main@sha256:6b8e3607cc79bf8d5b77ff399dbe02707489e66bc3232bb5d4ef86ddb4f0aa71
     restart: on-failure
     stop_grace_period: 30s
     environment:

@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-plex-debrid
 category: media
 name: plex_debrid
-version: "2.95.0-zeroq7"
+version: "2.95.0-zeroq8"
 tagline: Automated TorBox/Real-Debrid downloads from your Plex/Trakt watchlists
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Manifest-Server/main/icon.svg
 description: >-
@@ -57,20 +57,16 @@ torOnly: false
 permissions:
   - STORAGE_DOWNLOADS
 releaseNotes: >-
-  Adds a library symlinker so newly-downloaded media actually appears in Plex:
+  Makes TV-library recovery and Plex scanning reliable:
 
-  - After each download, plex_debrid now creates a {tmdb-ID}/{tvdb-ID} symlink
-    in the Plex library pointing at the Debrid Mount, in the exact format Plex
-    expects. A periodic background sweep reconciles the library against TorBox
-    and retroactively fills anything missing.
-  - Mounts the shared /downloads folder (matching the Plex app) so the
-    symlinker can read the raw mount and write into the library; now depends
-    on the Debrid Mount app.
-  - Configurable from the Web UI (Library Symlinker section): enable, sweep
-    interval, mount/library paths.
+  - Waits for delayed Debrid Mount visibility and recovers nested season packs,
+    single-file torrents, generic episode filenames, and partially linked shows.
+  - Keeps movie and TV matching separate so same-title media is routed into the
+    correct Plex library.
+  - Persists pending Plex scans across restarts and only clears them after scan
+    activity is verified, preventing newly linked shows from being silently lost.
+  - Keeps Plex tokens out of refresh URLs and logs, and safely bounds scan waits.
 
-  Also fixes the TorBox download handoff (requestdl needs token= param) and
-  deviation-regex matching (empty Special character renaming config wiped
-  space->dot conversion). Includes all prior fixes.
+  The image is pinned to the build validated by all 79 focused tests.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store/pull/7
