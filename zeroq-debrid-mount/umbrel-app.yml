@@ -1,12 +1,12 @@
-manifestVersion: 1
+manifestVersion: 1.1
 id: zeroq-debrid-mount
 category: media
 name: Debrid Mount
-version: "1.1.0"
+version: "1.2.0"
 tagline: TorBox/Real-Debrid mount for Plex and Vortexo, configured in the browser
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Manifest-Server/main/icon.svg
 description: >-
-  Debrid Mount runs rclone as its own Umbrel app so Plex does not lose media when Vortexo Server is stopped or updated.
+  Debrid Mount streams media directly from your TorBox or Real-Debrid cloud through a read-only filesystem. Source video files are not retained on Umbrel disk.
 
 
   It defaults to TorBox/WebDAV mode and can also run Real-Debrid through zurg plus rclone.
@@ -33,15 +33,12 @@ path: /index.html
 defaultUsername: ""
 defaultPassword: ""
 torOnly: false
-permissions:
-  - STORAGE_DOWNLOADS
+permissions: []
 releaseNotes: >-
-  Adds a built-in Web UI for configuring the mount from the browser — no more
-  SSH to edit debrid.env. Set TorBox WebDAV creds (or Real-Debrid zurg token),
-  test the connection with one click, and mount/unmount/restart from the page.
-  Live status pill + rclone log tail included.
-
-
-  Initial package. Adds a standalone rclone mount for TorBox/WebDAV and optional Real-Debrid zurg mode so Plex can keep resolving Vortexo symlink targets even when Vortexo Server is down.
+  Moves the read-only TorBox/Real-Debrid mount outside Umbrel Files-visible Home
+  and Apps storage. Persistent VFS file caching is now forced off, so source
+  media streams directly from WebDAV instead of being retained on Umbrel disk.
+  The retired local rclone cache is safely removed, while existing in-container
+  paths such as `/downloads/.vortexo-source` remain unchanged.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store/pull/2

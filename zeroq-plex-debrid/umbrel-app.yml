@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-plex-debrid
 category: media
 name: plex_debrid
-version: "2.95.0-zeroq8"
+version: "2.95.0-zeroq9"
 tagline: Automated TorBox/Real-Debrid downloads from your Plex/Trakt watchlists
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Manifest-Server/main/icon.svg
 description: >-
@@ -54,19 +54,17 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 torOnly: false
-permissions:
-  - STORAGE_DOWNLOADS
+permissions: []
 releaseNotes: >-
-  Makes TV-library recovery and Plex scanning reliable:
+  Fixes Web UI settings persistence: Content Sources now uses the engine's
+  canonical Plex/Trakt names, and both the Plex selection and Library Symlinker
+  settings survive page reloads and engine restarts.
 
-  - Waits for delayed Debrid Mount visibility and recovers nested season packs,
-    single-file torrents, generic episode filenames, and partially linked shows.
-  - Keeps movie and TV matching separate so same-title media is routed into the
-    correct Plex library.
-  - Persists pending Plex scans across restarts and only clears them after scan
-    activity is verified, preventing newly linked shows from being silently lost.
-  - Keeps Plex tokens out of refresh URLs and logs, and safely bounds scan waits.
 
-  The image is pinned to the build validated by all 79 focused tests.
+  Uses Debrid Mount's private, Files-invisible shared filesystem while preserving
+  `/downloads/.vortexo-source` and `/downloads/vortexo`. plex_debrid continues to
+  add torrents to the debrid cloud and writes only symlinks plus small scan
+  markers locally; TorBox source media remains remote. The pinned image passed
+  all 83 focused tests.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store/pull/7

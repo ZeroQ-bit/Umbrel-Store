@@ -22,16 +22,22 @@ services:
       DEBRID_CONFIG_DIR: /config
       DEBRID_STATUS_DIR: /status
       DEBRID_MOUNTPOINT: /downloads/.vortexo-source
-      DEBRID_HOST_MOUNT_PATH: ${UMBREL_ROOT}/home/Downloads/.vortexo-source
+      DEBRID_HOST_MOUNT_PATH: ${UMBREL_ROOT}/data/zeroq-media/.vortexo-source
+      DEBRID_RAM_CACHE_DIR: /rclone-cache
     entrypoint:
       - /bin/sh
       - /usr/local/bin/debrid-mount
     volumes:
-      - ${APP_DATA_DIR}/mount.sh:/usr/local/bin/debrid-mount:ro
-      - ${APP_DATA_DIR}/web_ui.py:/usr/local/bin/web_ui.py:ro
+      # Runtime lives under hooks because Umbrel copies hooks on app updates.
+      - ${APP_DATA_DIR}/hooks/runtime/mount.sh:/usr/local/bin/debrid-mount:ro
+      - ${APP_DATA_DIR}/hooks/runtime/web_ui.py:/usr/local/bin/web_ui.py:ro
       - ${APP_DATA_DIR}/data/config:/config
       - ${APP_DATA_DIR}/data/status:/status
-      - ${UMBREL_ROOT}/home/Downloads:/downloads:rshared
+      # Files-invisible host root. Child FUSE mounts propagate to consumers.
+      - ${UMBREL_ROOT}/data/zeroq-media:/downloads:rshared
+    tmpfs:
+      # Belt-and-suspenders: any rclone scratch data is RAM-only and bounded.
+      - /rclone-cache:size=64m,mode=0700
     networks:
       default:
         aliases:

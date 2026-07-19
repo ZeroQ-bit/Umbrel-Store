@@ -1,8 +1,8 @@
-manifestVersion: 1
+manifestVersion: 1.1
 id: zeroq-plex
 category: media
 name: Plex (Vortexo)
-version: "1.43.3.10828.7"
+version: "1.43.3.10828.8"
 tagline: Stream Movies & TV Shows
 icon: https://avatars.githubusercontent.com/u/11744877?v=4
 description: >-
@@ -12,7 +12,7 @@ description: >-
   Plex uses a server to house your media library and player apps to playback the media. Add, access, and share all the entertainment that matters to you, on almost any device.
 
 
-  This ZeroQ package is intended to replace the stock Umbrel Plex app when you want direct integration with Vortexo Server's shared downloads library.
+  This ZeroQ package is intended to replace the stock Umbrel Plex app when you want direct integration with Debrid Mount's private, Files-invisible library.
 
   Install and configure Debrid Mount first so `/downloads/.vortexo-source` is owned by a dedicated rclone/zurg app instead of the Vortexo Server container.
 
@@ -21,12 +21,11 @@ description: >-
   - `/downloads/vortexo/TV`
 
 
-  ⚠️ Because Plex still runs in host network mode on port 32400, stop the stock Plex app before installing this package. After you confirm this package imported your Plex setup correctly, you can remove the stock Plex app if you want.
+  ⚠️ Because Plex still runs in host network mode on port 32400, stop the stock Plex app before installing this package. This package does not import stock Plex data automatically; migrate that data separately before switching, and keep the stopped stock app as a rollback until the new package is verified.
 developer: Plex
 website: https://www.plex.tv/
 dependencies:
   - zeroq-debrid-mount
-  - zeroq-streamarr-pro
 repo: ""
 support: https://www.plex.tv/
 port: 32400
@@ -41,18 +40,12 @@ torOnly: false
 permissions:
   - GPU
 releaseNotes: >-
-  Uses the standalone Debrid Mount app for `/downloads/.vortexo-source`, so Plex media stays visible when Vortexo Server is stopped or updated.
+  Reads Debrid Mount's private shared filesystem through a read-only slave mount,
+  preventing Umbrel Files from indexing remote media while preserving the Plex
+  library paths `/downloads/vortexo/Movies` and `/downloads/vortexo/TV`.
 
 
-  Mounts Umbrel's shared downloads folder at `/downloads`, so Plex can scan Vortexo Server's generated library at `/downloads/vortexo`.
-
-
-  Stops importing stock Plex app data automatically, so old Plex library scan preferences do not get carried forward into this package.
-
-
-  Vortexo Server now keeps both its clean symlink library and its Debrid WebDAV source mount under the shared downloads folder, so Plex can follow symlinks without a separate app-data mount.
-
-
-  The bundled Plex image is Plex Media Server 1.43.1.10611. Full upstream release notes are available at https://www.videohelp.com/software/Plex
+  TorBox source media remains remote. Plex metadata and temporary transcodes
+  continue to use Plex's normal app-data directories.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store/pull/2

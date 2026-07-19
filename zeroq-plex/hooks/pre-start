@@ -5,7 +5,7 @@ APP_DIR="$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")"
 APP_DATA_DIR="${APP_DIR}/data"
 TARGET_CONFIG_DIR="${APP_DATA_DIR}/config"
 TARGET_TRANSCODE_DIR="${APP_DATA_DIR}/transcode"
-DOWNLOADS_DIR="${UMBREL_ROOT}/home/Downloads"
+DOWNLOADS_DIR="${UMBREL_ROOT}/data/zeroq-media"
 VORTEXO_LIBRARY_DIR="${DOWNLOADS_DIR}/vortexo"
 
 if command -v sysctl >/dev/null 2>&1; then
@@ -14,6 +14,19 @@ if command -v sysctl >/dev/null 2>&1; then
   sysctl -w fs.inotify.max_queued_events=32768 >/dev/null 2>&1 || true
 fi
 
-mkdir -p "${TARGET_CONFIG_DIR}" "${TARGET_TRANSCODE_DIR}" "${DOWNLOADS_DIR}" "${VORTEXO_LIBRARY_DIR}/Movies" "${VORTEXO_LIBRARY_DIR}/TV"
+mkdir -p "${TARGET_CONFIG_DIR}" "${TARGET_TRANSCODE_DIR}" \
+  "${DOWNLOADS_DIR}/.vortexo-source" "${VORTEXO_LIBRARY_DIR}/Movies" "${VORTEXO_LIBRARY_DIR}/TV"
+
+if ! mountpoint -q "${DOWNLOADS_DIR}"; then
+  mount --bind "${DOWNLOADS_DIR}" "${DOWNLOADS_DIR}"
+fi
+propagation="$(findmnt -T "${DOWNLOADS_DIR}" -o PROPAGATION -n 2>/dev/null || true)"
+if [[ "${propagation}" != "shared" && "${propagation}" != "rshared" ]]; then
+  mount --make-rshared "${DOWNLOADS_DIR}"
+fi
 
 chown -R 1000:1000 "${TARGET_CONFIG_DIR}" "${TARGET_TRANSCODE_DIR}"
+chown 1000:1000 "${DOWNLOADS_DIR}" "${VORTEXO_LIBRARY_DIR}" \
+  "${VORTEXO_LIBRARY_DIR}/Movies" "${VORTEXO_LIBRARY_DIR}/TV"
+chmod 0775 "${DOWNLOADS_DIR}" "${VORTEXO_LIBRARY_DIR}" \
+  "${VORTEXO_LIBRARY_DIR}/Movies" "${VORTEXO_LIBRARY_DIR}/TV"

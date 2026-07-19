@@ -11,7 +11,7 @@ services:
   server:
     # Keep the readable branch tag while pinning the exact tested image that
     # corresponds to the Umbrel app version below.
-    image: ghcr.io/zeroq-bit/plex_debrid:main@sha256:6b8e3607cc79bf8d5b77ff399dbe02707489e66bc3232bb5d4ef86ddb4f0aa71
+    image: ghcr.io/zeroq-bit/plex_debrid:main@sha256:2f30c4b3842fa49dedf729820e9ee4960871af4ba3b9a6eef202b0152ab1173c
     restart: on-failure
     stop_grace_period: 30s
     environment:
@@ -19,9 +19,8 @@ services:
       PD_CONFIG_DIR: /config
       PD_LOG_DIR: /logs
       PD_WEB_PORT: "8080"
-      # Library symlinker: shared downloads bind (matches zeroq-plex and
-      # zeroq-debrid-mount) so the symlinker can read the raw mount and write
-      # {tmdb-ID} symlinks into the Plex library.
+      # Stable container paths backed by Debrid Mount's Files-invisible root.
+      # The symlinker reads the remote mount and writes only library symlinks.
       PD_DOWNLOADS_DIR: /downloads
       PD_VORTEXO_SOURCE_DIR: /downloads/.vortexo-source
       PD_LIBRARY_MOVIES_DIR: /downloads/vortexo/Movies
@@ -29,7 +28,10 @@ services:
     volumes:
       - ${APP_DATA_DIR}/config:/config
       - ${APP_DATA_DIR}/logs:/logs
-      - ${UMBREL_ROOT}/home/Downloads:/downloads:rslave
+      # Keep the remote source read-only even though this image runs as root.
+      - ${UMBREL_ROOT}/data/zeroq-media:/downloads:rslave,ro
+      # Narrow writable overlay: symlinks and small scan markers only.
+      - ${UMBREL_ROOT}/data/zeroq-media/vortexo:/downloads/vortexo
     networks:
       default:
         aliases:

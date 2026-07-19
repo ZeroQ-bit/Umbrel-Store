@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP_DIR="$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")"
+APP_DATA_DIR="${APP_DIR}/data"
+SHARED_DIR="${UMBREL_ROOT}/data/zeroq-media"
+SOURCE_DIR="${SHARED_DIR}/.vortexo-source"
+LIBRARY_DIR="${SHARED_DIR}/vortexo"
+LEGACY_SOURCE_DIR="${UMBREL_ROOT}/home/Downloads/.vortexo-source"
+LEGACY_CACHE_DIR="${APP_DATA_DIR}/config/rclone-cache"
+STATUS_DIR="${APP_DATA_DIR}/status"
+SAFETY_MARKER="${STATUS_DIR}/host-storage-safe"
+
+mkdir -p "${STATUS_DIR}"
+rm -f "${SAFETY_MARKER}"
+
+cleanup_stale_rclone_mount() {
+  local path="$1"
+  local filesystem_type
+
+  if ! mountpoint -q "${path}" 2>/dev/null; then
+    return
+  fi
+  filesystem_type="$(findmnt -n -o FSTYPE -M "${path}" 2>/dev/null || true)"
+  if [[ "${filesystem_type}" != "fuse.rclone" ]]; then
+    echo "Refusing to unmount unexpected ${filesystem_type:-unknown} filesystem at ${path}" >&2
+    exit 1
+  fi
+  umount -l "${path}"
+  if mountpoint -q "${path}" 2>/dev/null; then
+    echo "Could not clear stale rclone mount at ${path}" >&2
+    exit 1
+  fi
+}
+
+purge_legacy_cache() {
+  if [[ -L "${LEGACY_CACHE_DIR}" || ( -e "${LEGACY_CACHE_DIR}" && ! -d "${LEGACY_CACHE_DIR}" ) ]]; then
+    unlink "${LEGACY_CACHE_DIR}"
+    return
+  fi
+  if [[ ! -d "${LEGACY_CACHE_DIR}" ]]; then
+    return
+  fi
+  if mountpoint -q "${LEGACY_CACHE_DIR}" 2>/dev/null; then
+    echo "Refusing to remove mounted legacy cache at ${LEGACY_CACHE_DIR}" >&2
+    exit 1
+  fi
+  find "${LEGACY_CACHE_DIR}" -xdev -mindepth 1 -delete
+  rmdir "${LEGACY_CACHE_DIR}"
+}
+
+mkdir -p "${SHARED_DIR}" "${SOURCE_DIR}" "${LIBRARY_DIR}/Movies" "${LIBRARY_DIR}/TV"
+cleanup_stale_rclone_mount "${LEGACY_SOURCE_DIR}"
+cleanup_stale_rclone_mount "${SOURCE_DIR}"
+purge_legacy_cache
+
+if find "${SOURCE_DIR}" -mindepth 1 -maxdepth 1 -print -quit | grep -q .; then
+  echo "Refusing to hide local files in ${SOURCE_DIR}" >&2
+  exit 1
+fi
+
+if ! mountpoint -q "${SHARED_DIR}"; then
+  mount --bind "${SHARED_DIR}" "${SHARED_DIR}"
+fi
+propagation="$(findmnt -T "${SHARED_DIR}" -o PROPAGATION -n 2>/dev/null || true)"
+if [[ "${propagation}" != "shared" && "${propagation}" != "rshared" ]]; then
+  mount --make-rshared "${SHARED_DIR}"
+fi
+propagation="$(findmnt -T "${SHARED_DIR}" -o PROPAGATION -n 2>/dev/null || true)"
+if [[ "${propagation}" != "shared" && "${propagation}" != "rshared" ]]; then
+  echo "Private media root is not a shared mount" >&2
+  exit 1
+fi
+
+# Change only these directory entries; never recursively traverse remote media.
+chown 1000:1000 "${SHARED_DIR}" "${SOURCE_DIR}" "${LIBRARY_DIR}" \
+  "${LIBRARY_DIR}/Movies" "${LIBRARY_DIR}/TV"
+chmod 0775 "${SHARED_DIR}" "${SOURCE_DIR}" "${LIBRARY_DIR}" \
+  "${LIBRARY_DIR}/Movies" "${LIBRARY_DIR}/TV"
+
+if [[ ! -e /dev/fuse ]]; then
+  echo "Warning: /dev/fuse is unavailable; Debrid Mount cannot start." >&2
+fi
+
+umask 077
+printf '%s\n' "${SHARED_DIR}" > "${SAFETY_MARKER}.tmp"
+mv "${SAFETY_MARKER}.tmp" "${SAFETY_MARKER}"
