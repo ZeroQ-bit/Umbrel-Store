@@ -1,0 +1,8 @@
+[project]
+name = "orbit-debrid"
+version = "0.1.0"
+description = "Unified debrid discovery, mounting, and Plex automation"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

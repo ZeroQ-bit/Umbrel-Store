@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07091b">
+  <title>Orbit</title>
+  <link rel="icon" href="/orbit.png">
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <div class="aurora aurora-one"></div><div class="aurora aurora-two"></div>
+  <header class="topbar">
+    <button class="brand" data-view="home" aria-label="Orbit home">
+      <img src="/orbit.png" alt=""><span>Orbit</span><small>media in motion</small>
+    </button>
+    <nav>
+      <button class="nav active" data-view="home">Home</button>
+      <button class="nav" data-view="discover">Discover</button>
+      <button class="nav" data-view="lists">Automatic Lists</button>
+      <button class="nav" data-view="activity">Activity</button>
+      <button class="nav" data-view="settings">Settings</button>
+    </nav>
+    <div id="system-pill" class="system-pill"><i></i><span>Checking system</span></div>
+  </header>
+
+  <main>
+    <section id="view-home" class="view active">
+      <div class="hero">
+        <div>
+          <p class="eyebrow">YOUR MEDIA UNIVERSE</p>
+          <h1>From discovery<br>to Plex, in one orbit.</h1>
+          <p class="hero-copy">Search once or connect a smart list. Orbit finds the release, adds it to debrid, waits for the mount, organizes the library, and refreshes Plex.</p>
+          <button class="primary big" data-view="discover">Find something to watch <span>→</span></button>
+        </div>
+        <div class="hero-visual">
+          <div class="planet-glow"></div><img src="/orbit.png" alt="Orbit">
+        </div>
+      </div>
+      <div class="metric-grid">
+        <article class="metric"><span class="metric-icon cyan">✓</span><div><strong id="count-ready">0</strong><small>Ready in library</small></div></article>
+        <article class="metric"><span class="metric-icon violet">↻</span><div><strong id="count-active">0</strong><small>Moving through Orbit</small></div></article>
+        <article class="metric"><span class="metric-icon pink">✦</span><div><strong id="count-lists">0</strong><small>Automatic lists</small></div></article>
+        <article class="metric"><span class="metric-icon blue">◉</span><div><strong id="mount-state">Checking</strong><small>Debrid mount</small></div></article>
+      </div>
+      <div class="section-head"><div><p class="eyebrow">RECENT ACTIVITY</p><h2>Latest requests</h2></div><button class="ghost" data-view="activity">View all</button></div>
+      <div id="recent-requests" class="request-list empty-state">Nothing requested yet. Discover your first title.</div>
+    </section>
+
+    <section id="view-discover" class="view">
+      <div class="page-title"><p class="eyebrow">MANUAL REQUEST</p><h1>What do you want to watch?</h1><p>Search movies and shows, then Orbit takes them all the way to Plex.</p></div>
+      <form id="search-form" class="search-box">
+        <span>⌕</span><input id="search-input" autocomplete="off" placeholder="Search movies and TV shows…"><button class="primary">Search</button>
+      </form>
+      <div id="search-message" class="hint">Results are matched using TMDb metadata.</div>
+      <div id="search-results" class="poster-grid"></div>
+    </section>
+
+    <section id="view-lists" class="view">
+      <div class="page-title split"><div><p class="eyebrow">AUTOMATIC IMPORTS</p><h1>Lists that keep moving.</h1><p>Connect MDBList or Trakt. New matches enter Orbit automatically; removed titles are never deleted.</p></div><button id="show-list-form" class="primary">Add automatic list</button></div>
+      <form id="list-form" class="panel form-panel hidden">
+        <div class="field-row"><label>List name<input name="name" required placeholder="New 4K releases"></label><label>Source<select name="kind"><option value="mdblist">MDBList</option><option value="trakt">Trakt</option></select></label></div>
+        <label>List URL<input name="url" type="url" required placeholder="https://mdblist.com/lists/user/list-name"></label>
+        <div class="field-row"><label>Quality profile<select name="profile"><option value="best">Best available</option><option value="4k">Prefer 4K</option><option value="1080p">1080p</option></select></label><label>Maximum per sync<input name="max_items" type="number" min="1" max="1000" value="100"></label></div>
+        <div class="form-actions"><button type="button" class="ghost" id="cancel-list">Cancel</button><button class="primary">Connect list</button></div>
+      </form>
+      <div id="list-sources" class="cards empty-state">No automatic lists connected yet.</div>
+    </section>
+
+    <section id="view-activity" class="view">
+      <div class="page-title"><p class="eyebrow">PIPELINE</p><h1>Every title, every stage.</h1><p>See exactly where each request is on its journey to your library.</p></div>
+      <div id="all-requests" class="request-list empty-state">No activity yet.</div>
+    </section>
+
+    <section id="view-settings" class="view">
+      <div class="page-title"><p class="eyebrow">CONNECTIONS</p><h1>One setup. One system.</h1><p>Secrets stay in Orbit's private app data and are hidden after saving.</p></div>
+      <form id="settings-form">
+        <article class="panel settings-section"><div><h2>Discovery</h2><p>Metadata search and automatic imports.</p></div><div class="settings-fields"><label>TMDb API key<input name="tmdb_api_key" type="password" placeholder="Required for search"></label><label>MDBList API key<input name="mdblist_api_key" type="password"></label><label>Trakt client ID<input name="trakt_client_id" type="password"></label><label>List refresh interval<select name="list_poll_minutes"><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">Hourly</option><option value="360">Every 6 hours</option></select></label></div></article>
+        <article class="panel settings-section"><div><h2>Debrid and mount</h2><p>Remote source media; persistent media caching stays off.</p></div><div class="settings-fields"><label>Provider<select name="debrid_mode"><option value="webdav">TorBox</option><option value="zurg">Real-Debrid</option></select></label><label>TorBox API key<input name="torbox_api_key" type="password"></label><label>TorBox WebDAV username<input name="webdav_username"></label><label>TorBox WebDAV password<input name="webdav_password" type="password"></label><label>WebDAV URL<input name="webdav_url" value="https://webdav.torbox.app"></label><label>Real-Debrid API token<input name="realdebrid_api_key" type="password"></label><button type="button" id="restart-mount" class="ghost">Restart mount</button></div></article>
+        <article class="panel settings-section"><div><h2>Plex</h2><p>Library lookup, refresh, and playback-ready verification.</p></div><div class="settings-fields"><label>Plex server URL<input name="plex_url" placeholder="http://192.168.1.43:32400"></label><label>Plex account name<input name="plex_username" placeholder="Orbit"></label><label>Plex token<input name="plex_token" type="password"></label><label>Movie and TV section IDs<input name="plex_sections" placeholder="1, 2"><span>Comma-separated Plex library section numbers.</span></label></div></article>
+        <div class="save-row"><span id="save-message"></span><button class="primary big">Save connections</button></div>
+      </form>
+    </section>
+  </main>
+  <div id="toast" role="status"></div>
+  <script src="/app.js"></script>
+</body>
+</html>

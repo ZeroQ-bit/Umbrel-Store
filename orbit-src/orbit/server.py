@@ -1,0 +1,256 @@
+"""Orbit HTTP API and static dashboard."""
+
+from __future__ import annotations
+
+import json
+import mimetypes
+import os
+import posixpath
+import threading
+import urllib.error
+import urllib.parse
+import urllib.request
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+from .integrations import IntegrationError, search_tmdb
+from .store import Store
+from .worker import Coordinator
+
+
+DATA_DIR = os.environ.get("ORBIT_DATA_DIR", "/data")
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+PORT = int(os.environ.get("ORBIT_PORT", "8080"))
+MOUNT_API = os.environ.get("ORBIT_MOUNT_API", "http://mount:8080")
+LEGACY_CONFIG = os.environ.get("PD_CONFIG_DIR", "/config")
+SECRET_KEYS = {
+    "tmdb_api_key", "mdblist_api_key", "trakt_client_id", "torbox_api_key",
+    "webdav_password", "realdebrid_api_key", "plex_token",
+}
+DEFAULT_VERSION = [
+    "1080p SDR",
+    [["retries", "<=", "48"], ["media type", "all", ""]],
+    "true",
+    [
+        ["cache status", "requirement", "cached", ""],
+        ["resolution", "requirement", "<=", "1080"],
+        ["resolution", "preference", "highest", ""],
+        ["title", "requirement", "exclude", "([^A-Z0-9]|HD|HQ)(CAM|T(ELE)?(S(YNC)?|C(INE)?)|ADS|HINDI)([^A-Z0-9]|RIP|$)"],
+        ["title", "requirement", "exclude", "(3D|DO?VI?|HDR)"],
+        ["size", "preference", "highest", ""],
+        ["seeders", "preference", "highest", ""],
+        ["size", "requirement", ">=", "0.1"],
+    ],
+]
+
+store = Store(os.path.join(DATA_DIR, "orbit.db"))
+coordinator = Coordinator(store, DATA_DIR)
+
+
+def _remote_json(url: str, method: str = "GET", payload: dict | None = None, timeout: int = 4):
+    body = json.dumps(payload).encode() if payload is not None else None
+    request = urllib.request.Request(
+        url, data=body, method=method,
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return json.loads(response.read().decode())
+    except Exception as error:
+        return {"ok": False, "error": str(error)}
+
+
+def _sync_mount_settings(settings: dict):
+    mode = settings.get("debrid_mode", "webdav")
+    payload = {
+        "DEBRID_MODE": mode,
+        "DEBRID_WEBDAV_URL": settings.get("webdav_url", "https://webdav.torbox.app"),
+        "DEBRID_WEBDAV_VENDOR": "other",
+        "DEBRID_WEBDAV_USER": settings.get("webdav_username", ""),
+        "DEBRID_WEBDAV_PASS": settings.get("webdav_password", ""),
+        "DEBRID_ZURG_TOKEN": settings.get("realdebrid_api_key", ""),
+        "DEBRID_RCLONE_VFS_CACHE_MODE": "off",
+        "DEBRID_RCLONE_DIR_CACHE_TIME": "1m",
+        "DEBRID_RCLONE_LOG_LEVEL": "INFO",
+    }
+    return _remote_json(MOUNT_API + "/api/config", "POST", payload)
+
+
+def _sync_legacy_settings(settings: dict):
+    """Merge Orbit's core connections into plex_debrid settings.json."""
+    path = os.path.join(LEGACY_CONFIG, "settings.json")
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            legacy = json.load(handle)
+    except (OSError, json.JSONDecodeError):
+        legacy = {}
+    provider = "Real Debrid" if settings.get("debrid_mode") == "zurg" else "TorBox"
+    plex_sections = [part.strip() for part in settings.get("plex_sections", "").split(",") if part.strip()]
+    legacy.update({
+        "Debrid Services": [provider],
+        "TorBox API Key": settings.get("torbox_api_key", ""),
+        "Real Debrid API Key": settings.get("realdebrid_api_key", ""),
+        "Content Services": ["Plex"] if settings.get("plex_token") else [],
+        "Plex users": [[settings.get("plex_username", "Orbit"), settings.get("plex_token", "")]] if settings.get("plex_token") else [],
+        "Plex server address": settings.get("plex_url", ""),
+        "Plex library refresh": plex_sections,
+        "Plex library check": plex_sections,
+        "Plex library partial scan": "true",
+        "Plex library refresh delay": "0",
+        "Library collection service": ["Plex Library"],
+        "Library update services": ["Plex Libraries"],
+        "Library ignore services": ["Plex Discover Watch Status"],
+        "Sources": legacy.get("Sources") or ["torrentio"],
+        "Versions": legacy.get("Versions") or [DEFAULT_VERSION],
+        "Symlinker Enabled": "true",
+        "Symlinker Mount Path": "/downloads",
+        "Symlinker Movies Library": "/downloads/vortexo/Movies",
+        "Symlinker TV Library": "/downloads/vortexo/TV",
+        "Show Menu on Startup": "false",
+        "Debug printing": "true",
+        "Log to file": "true",
+    })
+    os.makedirs(LEGACY_CONFIG, exist_ok=True)
+    temporary = path + ".orbit.tmp"
+    with open(temporary, "w", encoding="utf-8") as handle:
+        json.dump(legacy, handle, indent=2)
+    os.replace(temporary, path)
+
+
+class Handler(BaseHTTPRequestHandler):
+    server_version = "Orbit/0.1"
+
+    def log_message(self, *_args):
+        return
+
+    def end_headers(self):
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Referrer-Policy", "same-origin")
+        self.send_header("Cache-Control", "no-store")
+        super().end_headers()
+
+    def _json(self, payload, code=200):
+        body = json.dumps(payload).encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _body(self):
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+            return json.loads(self.rfile.read(length).decode("utf-8")) if length else {}
+        except (ValueError, UnicodeDecodeError, json.JSONDecodeError):
+            return None
+
+    def _static(self, requested: str):
+        filename = "index.html" if requested in ("", "/") else requested.lstrip("/")
+        safe = posixpath.normpath(filename)
+        if safe.startswith("../"):
+            return self._json({"error": "not found"}, 404)
+        path = os.path.join(STATIC_DIR, safe)
+        if not os.path.isfile(path):
+            return self._json({"error": "not found"}, 404)
+        with open(path, "rb") as handle:
+            body = handle.read()
+        self.send_response(200)
+        self.send_header("Content-Type", mimetypes.guess_type(path)[0] or "application/octet-stream")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        query = urllib.parse.parse_qs(parsed.query)
+        if path == "/api/health":
+            return self._json({"ok": True, "name": "Orbit", "version": "0.1.0"})
+        if path == "/api/dashboard":
+            result = store.dashboard()
+            result["mount"] = _remote_json(MOUNT_API + "/api/status")
+            return self._json(result)
+        if path == "/api/settings":
+            return self._json(store.get_settings())
+        if path == "/api/search":
+            settings = store.get_settings(reveal_secrets=True)
+            try:
+                results = search_tmdb(
+                    (query.get("q") or [""])[0], settings.get("tmdb_api_key", ""),
+                    (query.get("type") or ["multi"])[0],
+                )
+                return self._json({"results": results})
+            except IntegrationError as error:
+                return self._json({"error": str(error)}, 400)
+        if path == "/api/requests":
+            return self._json({"requests": store.list_requests()})
+        if path.startswith("/api/requests/") and path.endswith("/events"):
+            try:
+                request_id = int(path.split("/")[3])
+            except (IndexError, ValueError):
+                return self._json({"error": "invalid request"}, 400)
+            return self._json({"events": store.events(request_id)})
+        if path == "/api/lists":
+            return self._json({"lists": store.list_sources()})
+        if path.startswith("/api/mount/"):
+            suffix = path.removeprefix("/api/mount")
+            return self._json(_remote_json(MOUNT_API + "/api" + suffix))
+        if path.startswith("/api/"):
+            return self._json({"error": "not found"}, 404)
+        return self._static(path)
+
+    def do_POST(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        body = self._body()
+        if body is None:
+            return self._json({"error": "invalid JSON"}, 400)
+        if path == "/api/settings":
+            allowed = {
+                "tmdb_api_key", "mdblist_api_key", "trakt_client_id", "list_poll_minutes",
+                "debrid_mode", "torbox_api_key", "realdebrid_api_key", "webdav_url",
+                "webdav_username", "webdav_password", "plex_url", "plex_token", "plex_username",
+                "plex_sections",
+            }
+            values = {key: value for key, value in body.items() if key in allowed}
+            store.set_settings(values, SECRET_KEYS)
+            revealed = store.get_settings(reveal_secrets=True)
+            _sync_legacy_settings(revealed)
+            mount_result = _sync_mount_settings(revealed)
+            return self._json({"ok": True, "mount": mount_result})
+        if path == "/api/requests":
+            if not body.get("title") or not (body.get("tmdb_id") or body.get("imdb_id")):
+                return self._json({"error": "title and a metadata ID are required"}, 400)
+            request, created = store.add_request(body)
+            return self._json({"request": request, "created": created}, 201 if created else 200)
+        if path == "/api/lists":
+            if body.get("kind") not in ("mdblist", "trakt") or not body.get("name") or not body.get("url"):
+                return self._json({"error": "name, type and list URL are required"}, 400)
+            try:
+                source = store.add_list_source(body)
+            except Exception as error:
+                return self._json({"error": str(error)}, 409)
+            return self._json({"list": source}, 201)
+        if path.startswith("/api/lists/") and path.endswith("/sync"):
+            try:
+                source_id = int(path.split("/")[3])
+                result = coordinator.sync_list(source_id)
+                return self._json({"ok": True, **result})
+            except (IndexError, ValueError):
+                return self._json({"error": "invalid list"}, 400)
+            except IntegrationError as error:
+                return self._json({"error": str(error)}, 400)
+        if path.startswith("/api/mount/"):
+            suffix = path.removeprefix("/api/mount")
+            return self._json(_remote_json(MOUNT_API + "/api/mount" + suffix, "POST", body))
+        return self._json({"error": "not found"}, 404)
+
+
+def run():
+    coordinator.start()
+    server = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
+    print(f"Orbit listening on :{PORT}", flush=True)
+    try:
+        server.serve_forever()
+    finally:
+        coordinator.stop()
+        server.server_close()
