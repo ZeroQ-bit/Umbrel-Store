@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-orbit
 category: media
 name: Orbit
-version: "0.1.0"
+version: "0.1.1"
 tagline: Search, automate, mount, and deliver debrid media to Plex
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Umbrel-Store/master/zeroq-orbit/icon.png
 description: >-
@@ -36,8 +36,10 @@ defaultPassword: ""
 torOnly: false
 permissions: []
 releaseNotes: >-
-  First Orbit milestone with manual TMDb search, Add to Plex requests,
-  MDBList and Trakt automatic imports, a persistent request pipeline, unified
-  mount controls, and the new Orbit visual identity.
+  Fixes installation by publishing Orbit's container image from the Umbrel
+  repository and pinning the verified image digest. Includes manual TMDb
+  search, Add to Plex requests, MDBList and Trakt automatic imports, a
+  persistent request pipeline, unified mount controls, and the Orbit visual
+  identity.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store
