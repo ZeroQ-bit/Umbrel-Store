@@ -36,6 +36,8 @@ HOST_SAFETY_MARKER = os.path.join(STATUS_DIR, "host-storage-safe")
 LEGACY_RCLONE_CACHE = os.path.join(CONFIG_DIR, "rclone-cache")
 LISTEN_PORT = int(os.environ.get("DEBRID_WEB_PORT", "8080"))
 CACHE_MODE_KEY = "DEBRID_RCLONE_VFS_CACHE_MODE"
+STREAM_BUFFER_SIZE = "32M"
+STREAM_READ_WAIT = "250ms"
 STARTUP_SAFETY_ERROR = None
 
 # Config keys we manage, with friendly metadata for the UI.
@@ -66,8 +68,8 @@ CONFIG_SCHEMA = [
     (CACHE_MODE_KEY, "Persistent Media Cache", "select", "off",
      {"options": ["off"],
       "help": "Disabled. Source media streams directly from the debrid WebDAV account and is not retained on Umbrel disk."}),
-    ("DEBRID_RCLONE_DIR_CACHE_TIME", "Dir Cache Time", "text", "10s",
-     {"help": "e.g. 10s. How long directory listings are cached."}),
+    ("DEBRID_RCLONE_DIR_CACHE_TIME", "Dir Cache Time", "text", "1m",
+     {"help": "e.g. 1m. How long directory listings are cached."}),
     ("DEBRID_RCLONE_LOG_LEVEL", "Log Level", "select", "INFO",
      {"options": ["ERROR", "NOTICE", "INFO", "DEBUG"]}),
 ]
@@ -90,7 +92,7 @@ DEBRID_WEBDAV_PASS=''
 #
 # Rclone tuning (persistent source-media caching is disabled):
 DEBRID_RCLONE_VFS_CACHE_MODE='off'
-DEBRID_RCLONE_DIR_CACHE_TIME='10s'
+DEBRID_RCLONE_DIR_CACHE_TIME='1m'
 DEBRID_RCLONE_LOG_LEVEL='INFO'
 """
 
@@ -181,9 +183,13 @@ def enforce_no_local_media_config():
         "DEBRID_RCLONE_VFS_CACHE_MAX_SIZE",
         "DEBRID_RCLONE_VFS_CACHE_MAX_AGE",
     }
-    if (cfg.get(CACHE_MODE_KEY, "off").lower() != "off"
-            or obsolete_keys.intersection(cfg)):
-        write_config({CACHE_MODE_KEY: "off"})
+    updates = {}
+    if cfg.get(CACHE_MODE_KEY, "off").lower() != "off":
+        updates[CACHE_MODE_KEY] = "off"
+    if cfg.get("DEBRID_RCLONE_DIR_CACHE_TIME", "10s") == "10s":
+        updates["DEBRID_RCLONE_DIR_CACHE_TIME"] = "1m"
+    if updates or obsolete_keys.intersection(cfg):
+        write_config(updates)
 
 
 def _remove_tree_no_follow(path, root_device):
@@ -414,6 +420,16 @@ class Mount:
             "--read-only",
             "--dir-cache-time", cfg.get("DEBRID_RCLONE_DIR_CACHE_TIME", "10s"),
             "--vfs-cache-mode", "off",
+            # Plex probes and reopens remote media before starting a stream.
+            # Keep one bounded in-memory reader for the probe cycle and tolerate
+            # Plex's short out-of-order read bursts before opening another range.
+            "--buffer-size", STREAM_BUFFER_SIZE,
+            "--vfs-read-wait", STREAM_READ_WAIT,
+            "--attr-timeout", "30s",
+            "--max-read-ahead", "4M",
+            "--no-checksum",
+            "--no-modtime",
+            "--vfs-fast-fingerprint",
             # Some rclone subsystems still consult cache-dir even with VFS file
             # caching off. Keep it on a small tmpfs, never persistent storage.
             "--cache-dir", RAM_CACHE_DIR,

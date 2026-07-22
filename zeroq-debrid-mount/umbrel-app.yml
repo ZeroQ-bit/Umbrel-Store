@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-debrid-mount
 category: media
 name: Debrid Mount
-version: "1.2.0"
+version: "1.2.1"
 tagline: TorBox/Real-Debrid mount for Plex and Vortexo, configured in the browser
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Vortexo-Manifest-Server/main/icon.svg
 description: >-
@@ -35,10 +35,9 @@ defaultPassword: ""
 torOnly: false
 permissions: []
 releaseNotes: >-
-  Moves the read-only TorBox/Real-Debrid mount outside Umbrel Files-visible Home
-  and Apps storage. Persistent VFS file caching is now forced off, so source
-  media streams directly from WebDAV instead of being retained on Umbrel disk.
-  The retired local rclone cache is safely removed, while existing in-container
-  paths such as `/downloads/.vortexo-source` remain unchanged.
+  Improves Plex startup, resume, and subtitle playback over TorBox by reusing a
+  bounded in-memory stream during Plex's probe cycle and reducing unnecessary
+  WebDAV range requests. Persistent VFS file caching remains forced off, so
+  source media is not retained on Umbrel disk.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store/pull/2

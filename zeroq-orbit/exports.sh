@@ -1,0 +1,3 @@
+export APP_ZEROQ_ORBIT_DATA_DIR="${EXPORTS_APP_DIR}/data"
+export APP_ZEROQ_ORBIT_CONFIG_DIR="${EXPORTS_APP_DIR}/config"
+export APP_ZEROQ_ORBIT_LIBRARY_DIR="${UMBREL_ROOT}/data/zeroq-media/vortexo"

@@ -1,0 +1,103 @@
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: zeroq-orbit-server
+      APP_PORT: 8080
+      PROXY_AUTH_ADD: "true"
+
+  server:
+    image: ghcr.io/zeroq-bit/orbit:main
+    restart: on-failure
+    stop_grace_period: 30s
+    environment:
+      TZ: Etc/UTC
+      ORBIT_DATA_DIR: /data
+      ORBIT_PORT: "8080"
+      ORBIT_MOUNT_API: http://mount:8080
+      ORBIT_ACQUIRE_COMMAND: python3 -m orbit.acquire_legacy
+      PD_CONFIG_DIR: /config
+      PD_LOG_DIR: /logs
+      PD_ROOT: /app/plex_debrid
+      PD_DOWNLOADS_DIR: /downloads
+      PD_VORTEXO_SOURCE_DIR: /downloads/.vortexo-source
+      PD_LIBRARY_MOVIES_DIR: /downloads/vortexo/Movies
+      PD_LIBRARY_TV_DIR: /downloads/vortexo/TV
+      ORBIT_MOVIES_DIR: /downloads/vortexo/Movies
+      ORBIT_TV_DIR: /downloads/vortexo/TV
+    volumes:
+      - ${APP_DATA_DIR}/data:/data
+      - ${APP_DATA_DIR}/config:/config
+      - ${APP_DATA_DIR}/logs:/logs
+      - ${UMBREL_ROOT}/data/zeroq-media:/downloads:rslave,ro
+      - ${UMBREL_ROOT}/data/zeroq-media/vortexo:/downloads/vortexo
+    networks:
+      default:
+        aliases:
+          - zeroq-orbit-server
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+
+  automation:
+    image: ghcr.io/zeroq-bit/orbit:main
+    restart: on-failure
+    stop_grace_period: 30s
+    environment:
+      TZ: Etc/UTC
+      ORBIT_ROLE: automation
+      PD_CONFIG_DIR: /config
+      PD_LOG_DIR: /logs
+      PD_ROOT: /app/plex_debrid
+      PD_DOWNLOADS_DIR: /downloads
+      PD_VORTEXO_SOURCE_DIR: /downloads/.vortexo-source
+      PD_LIBRARY_MOVIES_DIR: /downloads/vortexo/Movies
+      PD_LIBRARY_TV_DIR: /downloads/vortexo/TV
+    volumes:
+      - ${APP_DATA_DIR}/config:/config
+      - ${APP_DATA_DIR}/logs:/logs
+      - ${UMBREL_ROOT}/data/zeroq-media:/downloads:rslave,ro
+      - ${UMBREL_ROOT}/data/zeroq-media/vortexo:/downloads/vortexo
+    depends_on:
+      - mount
+
+  mount:
+    image: iampuid0/pd_zurg:2.9.2@sha256:48ab5705e23e9afa511611aed47107b79b5c3d3ab0ff039720068b3f66ded374
+    restart: on-failure
+    stop_grace_period: 1m
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - /dev/fuse:/dev/fuse
+    security_opt:
+      - apparmor:unconfined
+    environment:
+      TZ: Etc/UTC
+      DEBRID_CONFIG_DIR: /config
+      DEBRID_STATUS_DIR: /status
+      DEBRID_MOUNTPOINT: /downloads/.vortexo-source
+      DEBRID_HOST_MOUNT_PATH: ${UMBREL_ROOT}/data/zeroq-media/.vortexo-source
+      DEBRID_RAM_CACHE_DIR: /rclone-cache
+    entrypoint: ["/bin/sh", "/usr/local/bin/debrid-mount"]
+    volumes:
+      - ${APP_DATA_DIR}/hooks/runtime/mount.sh:/usr/local/bin/debrid-mount:ro
+      - ${APP_DATA_DIR}/hooks/runtime/web_ui.py:/usr/local/bin/web_ui.py:ro
+      - ${APP_DATA_DIR}/mount/config:/config
+      - ${APP_DATA_DIR}/mount/status:/status
+      - ${UMBREL_ROOT}/data/zeroq-media:/downloads:rshared
+    tmpfs:
+      - /rclone-cache:size=64m,mode=0700
+    networks:
+      default:
+        aliases:
+          - mount
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s

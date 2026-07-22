@@ -1,0 +1,43 @@
+manifestVersion: 1.1
+id: zeroq-orbit
+category: media
+name: Orbit
+version: "0.1.0"
+tagline: Search, automate, mount, and deliver debrid media to Plex
+icon: https://raw.githubusercontent.com/ZeroQ-bit/Umbrel-Store/master/zeroq-orbit/icon.png
+description: >-
+  Orbit combines media discovery, automatic list imports, debrid acquisition,
+  a remote-only mount, library organization, and Plex refresh into one modern
+  Umbrel app.
+
+
+  Search for a movie or show and choose Add to Plex, or connect an MDBList or
+  Trakt list for automatic imports. Orbit tracks every request from discovery
+  through debrid, mount visibility, library linking, and the requested Plex scan.
+
+
+  TorBox WebDAV and Real-Debrid through zurg are supported. Source media streams
+  from the debrid provider and persistent VFS media caching remains disabled.
+  Orbit stores only its database, configuration, logs, and library symlinks.
+
+
+  Automatic lists use safe import-only behavior: removing a title from a list
+  never deletes Plex media, debrid torrents, or library links.
+developer: ZeroQ
+website: https://github.com/ZeroQ-bit/Orbit
+dependencies: []
+repo: https://github.com/ZeroQ-bit/Orbit
+support: https://github.com/ZeroQ-bit/Orbit/issues
+port: 19666
+gallery: []
+path: ""
+defaultUsername: ""
+defaultPassword: ""
+torOnly: false
+permissions: []
+releaseNotes: >-
+  First Orbit milestone with manual TMDb search, Add to Plex requests,
+  MDBList and Trakt automatic imports, a persistent request pipeline, unified
+  mount controls, and the new Orbit visual identity.
+submitter: ZeroQ
+submission: https://github.com/ZeroQ-bit/Umbrel-Store

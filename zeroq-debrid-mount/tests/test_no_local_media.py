@@ -86,9 +86,31 @@ class NoLocalMediaTests(unittest.TestCase):
         self.assertIn("--read-only", args)
         self.assertEqual(args[args.index("--vfs-cache-mode") + 1], "off")
         self.assertEqual(args[args.index("--cache-dir") + 1], str(self.ram_cache))
+        self.assertEqual(
+            args[args.index("--buffer-size") + 1],
+            self.module.STREAM_BUFFER_SIZE)
+        self.assertEqual(
+            args[args.index("--vfs-read-wait") + 1],
+            self.module.STREAM_READ_WAIT)
+        self.assertEqual(args[args.index("--attr-timeout") + 1], "30s")
+        self.assertEqual(args[args.index("--max-read-ahead") + 1], "4M")
+        self.assertIn("--no-checksum", args)
+        self.assertIn("--no-modtime", args)
+        self.assertIn("--vfs-fast-fingerprint", args)
         self.assertNotIn("--allow-non-empty", args)
         self.assertNotIn("--vfs-cache-max-size", args)
         self.assertNotIn("--vfs-cache-max-age", args)
+
+    def test_legacy_short_directory_cache_is_migrated_for_plex_probes(self):
+        Path(self.module.CONFIG_FILE).write_text(
+            "DEBRID_MODE='webdav'\n"
+            "DEBRID_RCLONE_DIR_CACHE_TIME='10s'\n"
+        )
+
+        self.module.enforce_no_local_media_config()
+
+        self.assertEqual(
+            self.module.read_config()["DEBRID_RCLONE_DIR_CACHE_TIME"], "1m")
 
     def test_legacy_cache_cleanup_does_not_follow_symlinks(self):
         outside = Path(self.temp_dir.name) / "outside-media.mkv"
