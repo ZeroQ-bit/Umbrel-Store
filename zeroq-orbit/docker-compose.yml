@@ -43,28 +43,6 @@ services:
       retries: 5
       start_period: 15s
 
-  automation:
-    image: ghcr.io/zeroq-bit/orbit:main@sha256:97e6567168fd8fed059180382c525dbe27ebab47faf934a8174291c860ead3eb
-    restart: on-failure
-    stop_grace_period: 30s
-    environment:
-      TZ: Etc/UTC
-      ORBIT_ROLE: automation
-      PD_CONFIG_DIR: /config
-      PD_LOG_DIR: /logs
-      PD_ROOT: /app/plex_debrid
-      PD_DOWNLOADS_DIR: /downloads
-      PD_VORTEXO_SOURCE_DIR: /downloads/.vortexo-source
-      PD_LIBRARY_MOVIES_DIR: /downloads/vortexo/Movies
-      PD_LIBRARY_TV_DIR: /downloads/vortexo/TV
-    volumes:
-      - ${APP_DATA_DIR}/config:/config
-      - ${APP_DATA_DIR}/logs:/logs
-      - ${UMBREL_ROOT}/data/zeroq-media:/downloads:rslave,ro
-      - ${UMBREL_ROOT}/data/zeroq-media/vortexo:/downloads/vortexo
-    depends_on:
-      - mount
-
   mount:
     image: iampuid0/pd_zurg:2.9.2@sha256:48ab5705e23e9afa511611aed47107b79b5c3d3ab0ff039720068b3f66ded374
     restart: on-failure

@@ -18,12 +18,18 @@ rm -f "${SAFETY_MARKER}"
 cleanup_stale_rclone_mount() {
   local path="$1"
   local filesystem_type
+  local probe_error
 
-  if ! mountpoint -q "${path}" 2>/dev/null; then
+  filesystem_type="$(findmnt -n -o FSTYPE -M "${path}" 2>/dev/null || true)"
+  probe_error="$(LC_ALL=C stat "${path}" 2>&1 >/dev/null || true)"
+  if ! mountpoint -q "${path}" 2>/dev/null \
+      && [[ "${probe_error}" != *"Transport endpoint is not connected"* ]] \
+      && [[ "${probe_error}" != *"Socket not connected"* ]]; then
     return
   fi
-  filesystem_type="$(findmnt -n -o FSTYPE -M "${path}" 2>/dev/null || true)"
-  if [[ "${filesystem_type}" != "fuse.rclone" ]]; then
+  if [[ "${filesystem_type}" != "fuse.rclone" && "${filesystem_type}" != "fuse" \
+      && "${probe_error}" != *"Transport endpoint is not connected"* \
+      && "${probe_error}" != *"Socket not connected"* ]]; then
     echo "Refusing to unmount unexpected ${filesystem_type:-unknown} filesystem at ${path}" >&2
     exit 1
   fi
@@ -32,6 +38,7 @@ cleanup_stale_rclone_mount() {
     echo "Could not clear stale rclone mount at ${path}" >&2
     exit 1
   fi
+  mkdir -p "${path}"
 }
 
 purge_legacy_cache() {
