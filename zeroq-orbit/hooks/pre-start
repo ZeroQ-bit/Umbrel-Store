@@ -2,7 +2,7 @@
 set -euo pipefail
 
 APP_DIR="$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")"
-APP_DATA_DIR="${APP_DIR}/data"
+APP_DATA_DIR="${APP_DIR}"
 SHARED_DIR="${UMBREL_ROOT}/data/zeroq-media"
 SOURCE_DIR="${SHARED_DIR}/.vortexo-source"
 LIBRARY_DIR="${SHARED_DIR}/vortexo"
