@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-orbit
 category: media
 name: Orbit
-version: "0.2.0"
+version: "0.2.1"
 tagline: Search, automate, mount, and deliver debrid media to Plex
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Umbrel-Store/master/zeroq-orbit/icon.png
 description: >-
@@ -43,6 +43,7 @@ releaseNotes: >-
   Adds a Plex Library view with current resolution, HDR or Dolby Vision, codecs,
   containers, sizes, episode counts, and multiple versions. Discover now marks
   titles already in Plex, lower-quality items can enter an explicit 1080p
-  upgrade flow, and automatic lists skip existing Plex media.
+  upgrade flow, and automatic lists skip existing Plex media. Stream-level Plex
+  metadata now fills quality details missing from older media records.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store

@@ -59,6 +59,23 @@ class PlexInventoryTests(unittest.TestCase):
         self.assertTrue(items[0]["upgrade_available"])
         self.assertEqual(len(items[0]["versions"]), 1)
 
+    def test_stream_metadata_fills_missing_media_resolution(self):
+        node = ET.fromstring("""
+        <Video ratingKey="301" type="movie" title="Archive">
+          <Media audioCodec="eac3">
+            <Part size="1000">
+              <Stream streamType="1" codec="hevc" width="1920" height="1080"
+                      colorTrc="smpte2084"/>
+              <Stream streamType="2" codec="eac3"/>
+            </Part>
+          </Media>
+        </Video>
+        """)
+        versions = plex._media_versions(node)
+        self.assertEqual(versions[0]["resolution"], "1080p")
+        self.assertEqual(versions[0]["dynamic_range"], "HDR")
+        self.assertEqual(versions[0]["video_codec"], "HEVC")
+
 
 if __name__ == "__main__":
     unittest.main()

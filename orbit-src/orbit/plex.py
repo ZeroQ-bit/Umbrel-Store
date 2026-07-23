@@ -58,8 +58,9 @@ def _metadata_ids(node: ET.Element) -> tuple[int | None, str]:
 
 def _normalise_resolution(media: ET.Element) -> str:
     raw = (media.get("videoResolution") or "").lower()
-    width = int(media.get("width") or 0)
-    height = int(media.get("height") or 0)
+    stream = media.find(".//Stream[@streamType='1']")
+    width = int(media.get("width") or (stream.get("width") if stream is not None else "") or 0)
+    height = int(media.get("height") or (stream.get("height") if stream is not None else "") or 0)
     if raw in ("4k", "2160") or width >= 3000 or height >= 2000:
         return "4K"
     if raw in ("1080", "1080p") or height >= 1000:
@@ -74,10 +75,15 @@ def _normalise_resolution(media: ET.Element) -> str:
 
 
 def _dynamic_range(media: ET.Element) -> str:
-    value = (media.get("videoDynamicRange") or "").upper()
+    stream = media.find(".//Stream[@streamType='1']")
+    stream_detail = " ".join(
+        stream.get(name, "") if stream is not None else ""
+        for name in ("displayTitle", "extendedDisplayTitle", "colorTrc", "DOVIPresent")
+    )
+    value = f"{media.get('videoDynamicRange') or ''} {stream_detail}".upper()
     if "DOVI" in value or "DOLBY" in value:
         return "Dolby Vision"
-    if "HDR" in value:
+    if "HDR" in value or "SMPTE2084" in value:
         return "HDR"
     return "SDR"
 
@@ -86,6 +92,8 @@ def _media_versions(node: ET.Element) -> list[dict]:
     versions = []
     for media in node.findall("./Media"):
         part = media.find("./Part")
+        video_stream = media.find(".//Stream[@streamType='1']")
+        audio_stream = media.find(".//Stream[@streamType='2']")
         try:
             size = int((part.get("size") if part is not None else "") or 0)
         except ValueError:
@@ -97,8 +105,14 @@ def _media_versions(node: ET.Element) -> list[dict]:
         versions.append({
             "resolution": _normalise_resolution(media),
             "dynamic_range": _dynamic_range(media),
-            "video_codec": (media.get("videoCodec") or "").upper(),
-            "audio_codec": (media.get("audioCodec") or "").upper(),
+            "video_codec": (
+                (video_stream.get("codec") if video_stream is not None else "")
+                or media.get("videoCodec") or ""
+            ).upper(),
+            "audio_codec": (
+                (audio_stream.get("codec") if audio_stream is not None else "")
+                or media.get("audioCodec") or ""
+            ).upper(),
             "container": (media.get("container") or "").upper(),
             "bitrate": bitrate,
             "size": size,

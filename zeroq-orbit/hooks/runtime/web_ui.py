@@ -762,10 +762,22 @@ def main():
         print("[web_ui] local media cache cleanup failed: {}".format(e), file=sys.stderr)
     # Auto-mount on boot if already configured.
     if _is_configured():
-        try:
-            mount.mount()
-        except Exception as e:
-            print("[web_ui] auto-mount failed: {}".format(e), file=sys.stderr)
+        for attempt in range(1, 7):
+            try:
+                ok, message = mount.mount()
+            except Exception as e:
+                ok, message = False, str(e)
+            if ok or message == "already mounted":
+                print("[web_ui] auto-mount ready: {}".format(message), flush=True)
+                break
+            print(
+                "[web_ui] auto-mount attempt {} failed: {}".format(attempt, message),
+                file=sys.stderr,
+                flush=True,
+            )
+            if "host storage safety hook did not complete" not in message or attempt == 6:
+                break
+            time.sleep(2)
     srv = ThreadingHTTPServer(("0.0.0.0", LISTEN_PORT), Handler)
     print("[web_ui] listening on :{}".format(LISTEN_PORT), flush=True)
     try:
