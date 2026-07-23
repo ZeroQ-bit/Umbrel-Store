@@ -13,6 +13,7 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from .integrations import IntegrationError, search_tmdb
+from .plex import fetch_plex_artwork
 from .store import Store
 from .worker import Coordinator
 
@@ -22,7 +23,7 @@ STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 PORT = int(os.environ.get("ORBIT_PORT", "8080"))
 MOUNT_API = os.environ.get("ORBIT_MOUNT_API", "http://mount:8080")
 LEGACY_CONFIG = os.environ.get("PD_CONFIG_DIR", "/config")
-VERSION = "0.2.2"
+VERSION = "0.3.0"
 SECRET_KEYS = {
     "tmdb_api_key", "mdblist_api_key", "trakt_client_id", "torbox_api_key",
     "webdav_password", "realdebrid_api_key", "plex_token",
@@ -148,6 +149,14 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _bytes(self, body: bytes, content_type: str, code: int = 200):
+        self.send_response(code)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "private, max-age=86400")
+        self.end_headers()
+        self.wfile.write(body)
+
     def _body(self):
         try:
             length = int(self.headers.get("Content-Length", "0"))
@@ -213,12 +222,44 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"events": store.events(request_id)})
         if path == "/api/lists":
             return self._json({"lists": store.list_sources()})
+        if path.startswith("/api/library/") and path.endswith("/artwork"):
+            try:
+                item_id = int(path.split("/")[3])
+            except (IndexError, ValueError):
+                return self._json({"error": "invalid library item"}, 400)
+            item = store.get_plex_library_item(item_id)
+            if not item:
+                return self._json({"error": "library item not found"}, 404)
+            settings = store.get_settings(reveal_secrets=True)
+            try:
+                artwork, content_type = fetch_plex_artwork(
+                    settings.get("plex_url", ""),
+                    settings.get("plex_token", ""),
+                    item.get("thumb", ""),
+                )
+                return self._bytes(artwork, content_type)
+            except IntegrationError as error:
+                return self._json({"error": str(error)}, 404)
         if path == "/api/library":
+            try:
+                limit = int((query.get("limit") or ["120"])[0])
+                offset = int((query.get("offset") or ["0"])[0])
+            except ValueError:
+                return self._json({"error": "invalid library page"}, 400)
+            filters = {
+                "query": (query.get("q") or [""])[0],
+                "media_type": (query.get("type") or [""])[0],
+                "quality": (query.get("quality") or [""])[0],
+                "status": (query.get("status") or [""])[0],
+            }
             return self._json({
                 "items": store.list_plex_library(
-                    (query.get("q") or [""])[0],
-                    (query.get("type") or [""])[0],
+                    **filters,
+                    sort=(query.get("sort") or ["title"])[0],
+                    limit=limit,
+                    offset=offset,
                 ),
+                "stats": store.plex_library_stats(**filters),
                 "sync": store.plex_library_status(),
             })
         if path.startswith("/api/mount/"):

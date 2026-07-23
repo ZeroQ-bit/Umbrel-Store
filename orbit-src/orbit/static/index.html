@@ -60,14 +60,40 @@
 
     <section id="view-library" class="view">
       <div class="page-title split">
-        <div><p class="eyebrow">PLEX INVENTORY</p><h1>Your library, in focus.</h1><p>Orbit reads the media already in Plex and shows the current resolution and dynamic range for every title.</p></div>
+        <div><p class="eyebrow">MEDIA MANAGER</p><h1>Your whole library.<br>One clear view.</h1><p>Browse every Plex movie and series, inspect versions and seasons, and spot titles ready for a quality upgrade.</p></div>
         <button id="refresh-library" class="primary">Refresh Plex library</button>
       </div>
-      <form id="library-search-form" class="search-box compact">
-        <span>⌕</span><input id="library-search-input" autocomplete="off" placeholder="Filter your Plex library…"><button class="ghost">Filter</button>
-      </form>
-      <div id="library-status" class="hint">Waiting for the first Plex scan.</div>
-      <div id="plex-library" class="library-grid empty-state">No Plex items imported yet.</div>
+      <div id="library-stats" class="library-stats" aria-label="Library totals"></div>
+      <div class="library-toolbar panel">
+        <div class="media-tabs" role="tablist" aria-label="Media type">
+          <button class="media-tab active" data-library-type="" role="tab">All</button>
+          <button class="media-tab" data-library-type="movie" role="tab">Movies</button>
+          <button class="media-tab" data-library-type="show" role="tab">Series</button>
+        </div>
+        <form id="library-search-form" class="library-search">
+          <span>⌕</span><input id="library-search-input" autocomplete="off" placeholder="Search your library…">
+        </form>
+        <select id="library-quality" aria-label="Filter quality">
+          <option value="">All qualities</option><option value="4k">4K</option>
+          <option value="1080p">1080p</option><option value="720p">720p</option>
+          <option value="sd">SD</option><option value="unknown">Unknown quality</option>
+        </select>
+        <select id="library-health" aria-label="Filter status">
+          <option value="">All statuses</option><option value="healthy">Good quality</option>
+          <option value="upgrade">Upgrade available</option><option value="unknown">Quality unknown</option>
+        </select>
+        <select id="library-sort" aria-label="Sort library">
+          <option value="title">Title A–Z</option><option value="year">Newest year</option>
+          <option value="quality">Best quality</option><option value="recent">Recently scanned</option>
+        </select>
+        <div class="view-toggle" aria-label="Library view">
+          <button class="active" data-library-view="grid" aria-label="Poster grid">▦</button>
+          <button data-library-view="list" aria-label="List view">☷</button>
+        </div>
+      </div>
+      <div class="library-summary"><span id="library-status">Waiting for the first Plex scan.</span><strong id="library-result-count"></strong></div>
+      <div id="plex-library" class="media-library-grid empty-state">No Plex items imported yet.</div>
+      <div class="library-more"><button id="library-load-more" class="ghost hidden">Load more</button></div>
     </section>
 
     <section id="view-lists" class="view">
@@ -96,6 +122,10 @@
       </form>
     </section>
   </main>
+  <dialog id="library-detail">
+    <button id="close-library-detail" class="detail-close" aria-label="Close">×</button>
+    <div id="library-detail-content"></div>
+  </dialog>
   <div id="toast" role="status"></div>
   <script src="/app.js"></script>
 </body>

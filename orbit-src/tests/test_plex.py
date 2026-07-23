@@ -40,11 +40,12 @@ class PlexInventoryTests(unittest.TestCase):
         episodes = ET.fromstring("""
         <MediaContainer>
           <Video ratingKey="202" type="episode" grandparentRatingKey="201">
+            <attr />
             <Media videoResolution="720" videoCodec="h264" audioCodec="aac" container="mkv">
               <Part size="1000"/>
             </Media>
           </Video>
-          <Video ratingKey="203" type="episode" grandparentRatingKey="201">
+          <Video ratingKey="203" type="episode" grandparentRatingKey="201" parentIndex="2">
             <Media videoResolution="720" videoCodec="h264" audioCodec="aac" container="mkv">
               <Part size="1200"/>
             </Media>
@@ -58,6 +59,8 @@ class PlexInventoryTests(unittest.TestCase):
         self.assertEqual(items[0]["quality"], "720p")
         self.assertTrue(items[0]["upgrade_available"])
         self.assertEqual(len(items[0]["versions"]), 1)
+        self.assertEqual(items[0]["seasons"][0]["title"], "Specials")
+        self.assertEqual(items[0]["seasons"][1]["title"], "Season 2")
 
     def test_stream_metadata_fills_missing_media_resolution(self):
         node = ET.fromstring("""

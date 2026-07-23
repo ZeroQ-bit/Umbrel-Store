@@ -98,6 +98,7 @@ class Store:
                     thumb TEXT NOT NULL DEFAULT '',
                     quality TEXT NOT NULL DEFAULT 'Quality unavailable',
                     versions_json TEXT NOT NULL DEFAULT '[]',
+                    seasons_json TEXT NOT NULL DEFAULT '[]',
                     upgrade_available INTEGER NOT NULL DEFAULT 0,
                     episode_count INTEGER NOT NULL DEFAULT 0,
                     updated_at TEXT NOT NULL,
@@ -117,6 +118,13 @@ class Store:
                 INSERT OR IGNORE INTO plex_library_sync(id) VALUES (1);
                 """
             )
+            columns = {
+                row["name"] for row in db.execute("PRAGMA table_info(plex_library)").fetchall()
+            }
+            if "seasons_json" not in columns:
+                db.execute(
+                    "ALTER TABLE plex_library ADD COLUMN seasons_json TEXT NOT NULL DEFAULT '[]'"
+                )
 
     def get_settings(self, reveal_secrets: bool = False) -> dict:
         with self.connection() as db:
@@ -194,15 +202,16 @@ class Store:
                 db.execute(
                     """INSERT INTO plex_library
                        (plex_rating_key, section_id, media_type, title, year,
-                        tmdb_id, imdb_id, thumb, quality, versions_json,
+                        tmdb_id, imdb_id, thumb, quality, versions_json, seasons_json,
                         upgrade_available, episode_count, updated_at)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
                         item["plex_rating_key"], item["section_id"], item["media_type"],
                         item["title"], item.get("year"), item.get("tmdb_id"),
                         item.get("imdb_id") or "", item.get("thumb") or "",
                         item.get("quality") or "Quality unavailable",
                         json.dumps(item.get("versions") or []),
+                        json.dumps(item.get("seasons") or []),
                         int(bool(item.get("upgrade_available"))),
                         int(item.get("episode_count") or 0), now,
                     ),
@@ -228,9 +237,10 @@ class Store:
             "status": "never", "item_count": 0, "last_error": "", "synced_at": None
         }
 
-    def list_plex_library(
-        self, query: str = "", media_type: str = "", limit: int = 1000
-    ) -> list[dict]:
+    @staticmethod
+    def _library_where(
+        query: str = "", media_type: str = "", quality: str = "", status: str = ""
+    ) -> tuple[str, list]:
         where = []
         values = []
         if query.strip():
@@ -239,21 +249,92 @@ class Store:
         if media_type in ("movie", "show"):
             where.append("media_type=?")
             values.append(media_type)
-        clause = f"WHERE {' AND '.join(where)}" if where else ""
-        values.append(max(1, min(limit, 5000)))
+        quality_clauses = {
+            "4k": "quality LIKE '4K%'",
+            "1080p": "quality LIKE '1080p%'",
+            "720p": "quality LIKE '720p%'",
+            "sd": "(quality LIKE 'SD%' OR quality LIKE '576p%')",
+            "unknown": "(quality='Quality unavailable' OR quality LIKE 'Unknown%')",
+        }
+        if quality in quality_clauses:
+            where.append(quality_clauses[quality])
+        if status == "upgrade":
+            where.append("upgrade_available=1")
+        elif status == "healthy":
+            where.append("upgrade_available=0")
+        elif status == "unknown":
+            where.append("(quality='Quality unavailable' OR quality LIKE 'Unknown%')")
+        return (f"WHERE {' AND '.join(where)}" if where else "", values)
+
+    @staticmethod
+    def _decode_library_row(row: sqlite3.Row) -> dict:
+        item = dict(row)
+        item["versions"] = json.loads(item.pop("versions_json") or "[]")
+        item["seasons"] = json.loads(item.pop("seasons_json") or "[]")
+        item["upgrade_available"] = bool(item["upgrade_available"])
+        return item
+
+    def list_plex_library(
+        self,
+        query: str = "",
+        media_type: str = "",
+        quality: str = "",
+        status: str = "",
+        sort: str = "title",
+        limit: int = 120,
+        offset: int = 0,
+    ) -> list[dict]:
+        clause, values = self._library_where(query, media_type, quality, status)
+        orders = {
+            "title": "title COLLATE NOCASE, year DESC",
+            "year": "year IS NULL, year DESC, title COLLATE NOCASE",
+            "recent": "updated_at DESC, title COLLATE NOCASE",
+            "quality": """CASE
+                WHEN quality LIKE '4K%' THEN 5
+                WHEN quality LIKE '1080p%' THEN 4
+                WHEN quality LIKE '720p%' THEN 3
+                WHEN quality LIKE '576p%' THEN 2
+                WHEN quality LIKE 'SD%' THEN 1 ELSE 0 END DESC,
+                title COLLATE NOCASE""",
+        }
+        values.extend((max(1, min(limit, 500)), max(0, offset)))
         with self.connection() as db:
             rows = db.execute(
                 f"""SELECT * FROM plex_library {clause}
-                    ORDER BY title COLLATE NOCASE, year DESC LIMIT ?""",
+                    ORDER BY {orders.get(sort, orders["title"])} LIMIT ? OFFSET ?""",
                 values,
             ).fetchall()
-        result = []
-        for row in rows:
-            item = dict(row)
-            item["versions"] = json.loads(item.pop("versions_json") or "[]")
-            item["upgrade_available"] = bool(item["upgrade_available"])
-            result.append(item)
+        return [self._decode_library_row(row) for row in rows]
+
+    def plex_library_stats(
+        self, query: str = "", media_type: str = "", quality: str = "", status: str = ""
+    ) -> dict:
+        clause, values = self._library_where(query, media_type, quality, status)
+        with self.connection() as db:
+            filtered = db.execute(
+                f"SELECT COUNT(*) FROM plex_library {clause}", values
+            ).fetchone()[0]
+            row = db.execute(
+                """SELECT
+                    COUNT(*) AS total,
+                    SUM(media_type='movie') AS movies,
+                    SUM(media_type='show') AS shows,
+                    SUM(quality LIKE '4K%') AS four_k,
+                    SUM(quality LIKE '1080p%') AS full_hd,
+                    SUM(upgrade_available=1) AS upgrades,
+                    SUM(quality='Quality unavailable' OR quality LIKE 'Unknown%') AS unknown
+                   FROM plex_library"""
+            ).fetchone()
+        result = {key: int(row[key] or 0) for key in row.keys()}
+        result["filtered"] = int(filtered)
         return result
+
+    def get_plex_library_item(self, item_id: int) -> dict | None:
+        with self.connection() as db:
+            row = db.execute(
+                "SELECT * FROM plex_library WHERE id=?", (item_id,)
+            ).fetchone()
+        return self._decode_library_row(row) if row else None
 
     def match_plex_library(self, item: dict) -> dict | None:
         media_type = "show" if item.get("media_type") in ("tv", "show") else "movie"
@@ -283,6 +364,7 @@ class Store:
             return None
         result = dict(row)
         result["versions"] = json.loads(result.pop("versions_json") or "[]")
+        result["seasons"] = json.loads(result.pop("seasons_json") or "[]")
         result["upgrade_available"] = bool(result["upgrade_available"])
         return result
 

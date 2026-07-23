@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-orbit
 category: media
 name: Orbit
-version: "0.2.3"
+version: "0.3.0"
 tagline: Search, automate, mount, and deliver debrid media to Plex
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Umbrel-Store/master/zeroq-orbit/icon.png
 description: >-
@@ -40,12 +40,12 @@ defaultPassword: ""
 torOnly: false
 permissions: []
 releaseNotes: >-
-  Adds a Plex Library view with current resolution, HDR or Dolby Vision, codecs,
-  containers, sizes, episode counts, and multiple versions. Discover now marks
-  titles already in Plex, lower-quality items can enter an explicit 1080p
-  upgrade flow, and automatic lists skip existing Plex media. Stream-level Plex
-  metadata now fills quality details missing from older media records. Mount
-  startup now reconstructs its safety marker only after verifying the dedicated
-  host media bind, expected host path, and an empty mountpoint.
+  Turns Plex Library into a full media manager with Movies and Series tabs,
+  poster-grid and compact-list views, instant search, quality and upgrade
+  filters, whole-library sorting, real paging, and collection totals. Title
+  details show every Plex media version with resolution, HDR format, codecs,
+  container, bitrate, and size. Series now include per-season episode counts and
+  quality summaries after a Plex refresh. Artwork is securely proxied from the
+  configured Plex server so its token never appears in the browser.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store

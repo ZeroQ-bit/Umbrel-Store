@@ -90,6 +90,48 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(len(self.store.list_plex_library()), 1)
         self.assertEqual(self.store.plex_library_status()["last_error"], "Plex unavailable")
 
+    def test_library_manager_filters_sorts_pages_and_reports_totals(self):
+        self.store.replace_plex_library([
+            {
+                "plex_rating_key": "101", "section_id": "4", "media_type": "movie",
+                "title": "Dune", "year": 2021, "quality": "4K HDR",
+                "versions": [], "upgrade_available": False,
+            },
+            {
+                "plex_rating_key": "102", "section_id": "5", "media_type": "show",
+                "title": "Foundation", "year": 2021, "quality": "720p",
+                "versions": [], "upgrade_available": True, "episode_count": 20,
+                "seasons": [{"number": 1, "title": "Season 1", "episode_count": 10, "quality": "720p"}],
+            },
+            {
+                "plex_rating_key": "103", "section_id": "4", "media_type": "movie",
+                "title": "Arrival", "year": 2016, "quality": "1080p",
+                "versions": [], "upgrade_available": False,
+            },
+        ])
+        self.assertEqual(
+            [item["title"] for item in self.store.list_plex_library(sort="year", limit=2)],
+            ["Dune", "Foundation"],
+        )
+        self.assertEqual(
+            self.store.list_plex_library(status="upgrade")[0]["title"], "Foundation"
+        )
+        self.assertEqual(
+            self.store.list_plex_library(quality="4k")[0]["title"], "Dune"
+        )
+        self.assertEqual(
+            self.store.list_plex_library(limit=1, offset=1)[0]["title"], "Dune"
+        )
+        stats = self.store.plex_library_stats(media_type="movie")
+        self.assertEqual(stats["total"], 3)
+        self.assertEqual(stats["movies"], 2)
+        self.assertEqual(stats["shows"], 1)
+        self.assertEqual(stats["filtered"], 2)
+        show = self.store.get_plex_library_item(
+            self.store.list_plex_library(media_type="show")[0]["id"]
+        )
+        self.assertEqual(show["seasons"][0]["episode_count"], 10)
+
     def test_automatic_list_skips_titles_already_in_plex(self):
         self.store.replace_plex_library([{
             "plex_rating_key": "101", "section_id": "4", "media_type": "movie",

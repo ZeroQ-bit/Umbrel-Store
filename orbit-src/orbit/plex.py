@@ -186,6 +186,7 @@ def _library_item(node: ET.Element, section_id: str, versions: list[dict] | None
         "versions": resolved_versions,
         "upgrade_available": upgrade_available(resolved_versions),
         "episode_count": 0,
+        "seasons": [],
     }
 
 
@@ -220,11 +221,60 @@ def scan_plex_library(base_url: str, token: str, section_ids: list[str]) -> list
                 show = shows.get(episode.get("grandparentRatingKey"))
                 if not show:
                     continue
-                show["versions"].extend(_media_versions(episode))
+                episode_versions = _media_versions(episode)
+                show["versions"].extend(episode_versions)
                 show["episode_count"] += 1
+                try:
+                    season_number = int(episode.get("parentIndex") or 0)
+                except ValueError:
+                    season_number = 0
+                season = next(
+                    (item for item in show["seasons"] if item["number"] == season_number),
+                    None,
+                )
+                if season is None:
+                    season = {
+                        "number": season_number,
+                        "title": "Specials" if season_number == 0 else f"Season {season_number}",
+                        "episode_count": 0,
+                        "versions": [],
+                    }
+                    show["seasons"].append(season)
+                season["episode_count"] += 1
+                season["versions"].extend(episode_versions)
             for show in shows.values():
                 show["versions"] = _distinct_qualities(show["versions"])
                 show["quality"] = quality_summary(show["versions"])
                 show["upgrade_available"] = upgrade_available(show["versions"])
+                for season in show["seasons"]:
+                    season["versions"] = _distinct_qualities(season["versions"])
+                    season["quality"] = quality_summary(season["versions"])
+                    season.pop("versions")
+                show["seasons"].sort(key=lambda item: item["number"])
                 items.append(show)
     return items
+
+
+def fetch_plex_artwork(base_url: str, token: str, thumb: str) -> tuple[bytes, str]:
+    if not base_url or not token:
+        raise IntegrationError("Add the Plex server URL and token in Settings")
+    if not thumb.startswith("/") or thumb.startswith("//"):
+        raise IntegrationError("This Plex item has no usable artwork")
+    params = urllib.parse.urlencode({
+        "url": thumb,
+        "width": 360,
+        "height": 540,
+        "minSize": 1,
+        "upscale": 1,
+    })
+    request = urllib.request.Request(
+        f"{base_url.rstrip('/')}/photo/:/transcode?{params}",
+        headers={**PLEX_HEADERS, "X-Plex-Token": token},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            return response.read(), response.headers.get_content_type()
+    except urllib.error.HTTPError as error:
+        raise IntegrationError(f"Plex artwork returned HTTP {error.code}") from error
+    except (urllib.error.URLError, TimeoutError) as error:
+        raise IntegrationError(f"Could not read Plex artwork: {error}") from error
