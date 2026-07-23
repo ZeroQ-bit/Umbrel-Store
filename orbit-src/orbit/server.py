@@ -22,6 +22,7 @@ STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 PORT = int(os.environ.get("ORBIT_PORT", "8080"))
 MOUNT_API = os.environ.get("ORBIT_MOUNT_API", "http://mount:8080")
 LEGACY_CONFIG = os.environ.get("PD_CONFIG_DIR", "/config")
+VERSION = "0.2.0"
 SECRET_KEYS = {
     "tmdb_api_key", "mdblist_api_key", "trakt_client_id", "torbox_api_key",
     "webdav_password", "realdebrid_api_key", "plex_token",
@@ -175,10 +176,11 @@ class Handler(BaseHTTPRequestHandler):
         path = parsed.path
         query = urllib.parse.parse_qs(parsed.query)
         if path == "/api/health":
-            return self._json({"ok": True, "name": "Orbit", "version": "0.1.0"})
+            return self._json({"ok": True, "name": "Orbit", "version": VERSION})
         if path == "/api/dashboard":
             result = store.dashboard()
             result["mount"] = _remote_json(MOUNT_API + "/api/status")
+            result["plex_library"] = store.plex_library_status()
             return self._json(result)
         if path == "/api/settings":
             return self._json(store.get_settings())
@@ -189,6 +191,15 @@ class Handler(BaseHTTPRequestHandler):
                     (query.get("q") or [""])[0], settings.get("tmdb_api_key", ""),
                     (query.get("type") or ["multi"])[0],
                 )
+                for item in results:
+                    plex_item = store.match_plex_library(item)
+                    if plex_item:
+                        item["plex"] = {
+                            "quality": plex_item["quality"],
+                            "upgrade_available": plex_item["upgrade_available"],
+                            "episode_count": plex_item["episode_count"],
+                            "plex_rating_key": plex_item["plex_rating_key"],
+                        }
                 return self._json({"results": results})
             except IntegrationError as error:
                 return self._json({"error": str(error)}, 400)
@@ -202,6 +213,14 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"events": store.events(request_id)})
         if path == "/api/lists":
             return self._json({"lists": store.list_sources()})
+        if path == "/api/library":
+            return self._json({
+                "items": store.list_plex_library(
+                    (query.get("q") or [""])[0],
+                    (query.get("type") or [""])[0],
+                ),
+                "sync": store.plex_library_status(),
+            })
         if path.startswith("/api/mount/"):
             suffix = path.removeprefix("/api/mount")
             return self._json(_remote_json(MOUNT_API + "/api" + suffix))
@@ -231,7 +250,20 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/requests":
             if not body.get("title") or not (body.get("tmdb_id") or body.get("imdb_id")):
                 return self._json({"error": "title and a metadata ID are required"}, 400)
-            request, created = store.add_request(body)
+            plex_item = store.match_plex_library(body)
+            is_upgrade = bool(body.get("upgrade"))
+            if plex_item and not is_upgrade:
+                return self._json({
+                    "error": f"Already in Plex at {plex_item['quality']}",
+                    "plex": plex_item,
+                }, 409)
+            if is_upgrade and (not plex_item or not plex_item["upgrade_available"]):
+                return self._json({"error": "This Plex item does not need a 1080p upgrade"}, 409)
+            if is_upgrade:
+                body["profile"] = "1080p"
+            request, created = store.add_request(
+                body, source="manual-upgrade" if is_upgrade else "manual"
+            )
             return self._json({"request": request, "created": created}, 201 if created else 200)
         if path == "/api/lists":
             if body.get("kind") not in ("mdblist", "trakt") or not body.get("name") or not body.get("url"):
@@ -248,6 +280,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"ok": True, **result})
             except (IndexError, ValueError):
                 return self._json({"error": "invalid list"}, 400)
+            except IntegrationError as error:
+                return self._json({"error": str(error)}, 400)
+        if path == "/api/library/sync":
+            try:
+                return self._json({"ok": True, **coordinator.sync_plex_library()})
             except IntegrationError as error:
                 return self._json({"error": str(error)}, 400)
         if path == "/api/mount/restart":

@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-orbit
 category: media
 name: Orbit
-version: "0.1.6"
+version: "0.2.0"
 tagline: Search, automate, mount, and deliver debrid media to Plex
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Umbrel-Store/master/zeroq-orbit/icon.png
 description: >-
@@ -20,6 +20,10 @@ description: >-
   from the debrid provider and persistent VFS media caching remains disabled.
   Orbit stores only its database, configuration, logs, and library symlinks.
 
+  The Plex Library view imports existing movies and shows with their current
+  resolution, HDR format, codecs, containers, sizes, and available versions.
+  Discover and automatic lists avoid duplicate requests for titles already in Plex.
+
 
   Automatic lists use safe import-only behavior: removing a title from a list
   never deletes Plex media, debrid torrents, or library links.
@@ -36,8 +40,9 @@ defaultPassword: ""
 torOnly: false
 permissions: []
 releaseNotes: >-
-  Corrects Orbit's Umbrel data-root detection so the host-storage safety marker
-  reaches the mount container. Saved TorBox credentials are reapplied before
-  every mount restart, and disconnected legacy FUSE sockets are detached safely.
+  Adds a Plex Library view with current resolution, HDR or Dolby Vision, codecs,
+  containers, sizes, episode counts, and multiple versions. Discover now marks
+  titles already in Plex, lower-quality items can enter an explicit 1080p
+  upgrade flow, and automatic lists skip existing Plex media.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store

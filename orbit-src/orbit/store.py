@@ -29,6 +29,9 @@ class Store:
         try:
             yield connection
             connection.commit()
+        except Exception:
+            connection.rollback()
+            raise
         finally:
             connection.close()
 
@@ -83,6 +86,35 @@ class Store:
                     created_at TEXT NOT NULL,
                     UNIQUE(kind, url)
                 );
+                CREATE TABLE IF NOT EXISTS plex_library (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    plex_rating_key TEXT NOT NULL,
+                    section_id TEXT NOT NULL,
+                    media_type TEXT NOT NULL CHECK(media_type IN ('movie', 'show')),
+                    title TEXT NOT NULL,
+                    year INTEGER,
+                    tmdb_id INTEGER,
+                    imdb_id TEXT NOT NULL DEFAULT '',
+                    thumb TEXT NOT NULL DEFAULT '',
+                    quality TEXT NOT NULL DEFAULT 'Quality unavailable',
+                    versions_json TEXT NOT NULL DEFAULT '[]',
+                    upgrade_available INTEGER NOT NULL DEFAULT 0,
+                    episode_count INTEGER NOT NULL DEFAULT 0,
+                    updated_at TEXT NOT NULL,
+                    UNIQUE(section_id, plex_rating_key)
+                );
+                CREATE INDEX IF NOT EXISTS plex_library_tmdb
+                    ON plex_library(media_type, tmdb_id);
+                CREATE INDEX IF NOT EXISTS plex_library_imdb
+                    ON plex_library(imdb_id);
+                CREATE TABLE IF NOT EXISTS plex_library_sync (
+                    id INTEGER PRIMARY KEY CHECK(id = 1),
+                    status TEXT NOT NULL DEFAULT 'never',
+                    item_count INTEGER NOT NULL DEFAULT 0,
+                    last_error TEXT NOT NULL DEFAULT '',
+                    synced_at TEXT
+                );
+                INSERT OR IGNORE INTO plex_library_sync(id) VALUES (1);
                 """
             )
 
@@ -153,6 +185,106 @@ class Store:
                 "SELECT * FROM requests ORDER BY id DESC LIMIT ?", (max(1, min(limit, 500)),)
             ).fetchall()
         return [dict(row) for row in rows]
+
+    def replace_plex_library(self, items: list[dict]):
+        now = utc_now()
+        with self._lock, self.connection() as db:
+            db.execute("DELETE FROM plex_library")
+            for item in items:
+                db.execute(
+                    """INSERT INTO plex_library
+                       (plex_rating_key, section_id, media_type, title, year,
+                        tmdb_id, imdb_id, thumb, quality, versions_json,
+                        upgrade_available, episode_count, updated_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        item["plex_rating_key"], item["section_id"], item["media_type"],
+                        item["title"], item.get("year"), item.get("tmdb_id"),
+                        item.get("imdb_id") or "", item.get("thumb") or "",
+                        item.get("quality") or "Quality unavailable",
+                        json.dumps(item.get("versions") or []),
+                        int(bool(item.get("upgrade_available"))),
+                        int(item.get("episode_count") or 0), now,
+                    ),
+                )
+            db.execute(
+                """UPDATE plex_library_sync
+                   SET status='ready', item_count=?, last_error='', synced_at=?
+                   WHERE id=1""",
+                (len(items), now),
+            )
+
+    def fail_plex_library_sync(self, error: str):
+        with self._lock, self.connection() as db:
+            db.execute(
+                "UPDATE plex_library_sync SET status='error', last_error=? WHERE id=1",
+                (error,),
+            )
+
+    def plex_library_status(self) -> dict:
+        with self.connection() as db:
+            row = db.execute("SELECT * FROM plex_library_sync WHERE id=1").fetchone()
+        return dict(row) if row else {
+            "status": "never", "item_count": 0, "last_error": "", "synced_at": None
+        }
+
+    def list_plex_library(
+        self, query: str = "", media_type: str = "", limit: int = 1000
+    ) -> list[dict]:
+        where = []
+        values = []
+        if query.strip():
+            where.append("LOWER(title) LIKE ?")
+            values.append(f"%{query.strip().lower()}%")
+        if media_type in ("movie", "show"):
+            where.append("media_type=?")
+            values.append(media_type)
+        clause = f"WHERE {' AND '.join(where)}" if where else ""
+        values.append(max(1, min(limit, 5000)))
+        with self.connection() as db:
+            rows = db.execute(
+                f"""SELECT * FROM plex_library {clause}
+                    ORDER BY title COLLATE NOCASE, year DESC LIMIT ?""",
+                values,
+            ).fetchall()
+        result = []
+        for row in rows:
+            item = dict(row)
+            item["versions"] = json.loads(item.pop("versions_json") or "[]")
+            item["upgrade_available"] = bool(item["upgrade_available"])
+            result.append(item)
+        return result
+
+    def match_plex_library(self, item: dict) -> dict | None:
+        media_type = "show" if item.get("media_type") in ("tv", "show") else "movie"
+        tmdb_id = item.get("tmdb_id") or item.get("id")
+        imdb_id = item.get("imdb_id") or ""
+        with self.connection() as db:
+            row = None
+            if tmdb_id:
+                row = db.execute(
+                    """SELECT * FROM plex_library
+                       WHERE media_type=? AND tmdb_id=? LIMIT 1""",
+                    (media_type, tmdb_id),
+                ).fetchone()
+            if row is None and imdb_id:
+                row = db.execute(
+                    "SELECT * FROM plex_library WHERE imdb_id=? LIMIT 1", (imdb_id,)
+                ).fetchone()
+            if row is None and item.get("title"):
+                row = db.execute(
+                    """SELECT * FROM plex_library
+                       WHERE media_type=? AND LOWER(title)=LOWER(?)
+                         AND (year=? OR ? IS NULL OR year IS NULL)
+                       ORDER BY year IS NULL LIMIT 1""",
+                    (media_type, item["title"], item.get("year"), item.get("year")),
+                ).fetchone()
+        if row is None:
+            return None
+        result = dict(row)
+        result["versions"] = json.loads(result.pop("versions_json") or "[]")
+        result["upgrade_available"] = bool(result["upgrade_available"])
+        return result
 
     def next_queued(self) -> dict | None:
         with self.connection() as db:

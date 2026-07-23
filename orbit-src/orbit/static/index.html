@@ -17,6 +17,7 @@
     <nav>
       <button class="nav active" data-view="home">Home</button>
       <button class="nav" data-view="discover">Discover</button>
+      <button class="nav" data-view="library">Library</button>
       <button class="nav" data-view="lists">Automatic Lists</button>
       <button class="nav" data-view="activity">Activity</button>
       <button class="nav" data-view="settings">Settings</button>
@@ -38,6 +39,7 @@
         </div>
       </div>
       <div class="metric-grid">
+        <article class="metric"><span class="metric-icon cyan">▣</span><div><strong id="count-library">0</strong><small>In Plex</small></div></article>
         <article class="metric"><span class="metric-icon cyan">✓</span><div><strong id="count-ready">0</strong><small>Ready in library</small></div></article>
         <article class="metric"><span class="metric-icon violet">↻</span><div><strong id="count-active">0</strong><small>Moving through Orbit</small></div></article>
         <article class="metric"><span class="metric-icon pink">✦</span><div><strong id="count-lists">0</strong><small>Automatic lists</small></div></article>
@@ -54,6 +56,18 @@
       </form>
       <div id="search-message" class="hint">Results are matched using TMDb metadata.</div>
       <div id="search-results" class="poster-grid"></div>
+    </section>
+
+    <section id="view-library" class="view">
+      <div class="page-title split">
+        <div><p class="eyebrow">PLEX INVENTORY</p><h1>Your library, in focus.</h1><p>Orbit reads the media already in Plex and shows the current resolution and dynamic range for every title.</p></div>
+        <button id="refresh-library" class="primary">Refresh Plex library</button>
+      </div>
+      <form id="library-search-form" class="search-box compact">
+        <span>⌕</span><input id="library-search-input" autocomplete="off" placeholder="Filter your Plex library…"><button class="ghost">Filter</button>
+      </form>
+      <div id="library-status" class="hint">Waiting for the first Plex scan.</div>
+      <div id="plex-library" class="library-grid empty-state">No Plex items imported yet.</div>
     </section>
 
     <section id="view-lists" class="view">

@@ -11,6 +11,7 @@ import time
 import re
 
 from .integrations import IntegrationError, fetch_list
+from .plex import scan_plex_library
 from .store import Store
 
 
@@ -21,6 +22,7 @@ class Coordinator:
         self.stop_event = threading.Event()
         self.thread: threading.Thread | None = None
         self.last_list_poll = 0.0
+        self.last_plex_poll = 0.0
 
     def start(self):
         if self.thread and self.thread.is_alive():
@@ -40,6 +42,12 @@ class Coordinator:
                 if time.monotonic() - self.last_list_poll >= max(300, interval):
                     self.sync_all_lists()
                     self.last_list_poll = time.monotonic()
+                if time.monotonic() - self.last_plex_poll >= 900:
+                    try:
+                        self.sync_plex_library()
+                    except IntegrationError:
+                        pass
+                    self.last_plex_poll = time.monotonic()
             except Exception:
                 # Keep the dashboard alive even when one background operation fails.
                 time.sleep(2)
@@ -103,12 +111,20 @@ class Coordinator:
         try:
             items = fetch_list(source, settings)
             added = 0
+            skipped_existing = 0
             for item in items:
+                if self.store.match_plex_library(item):
+                    skipped_existing += 1
+                    continue
                 item["profile"] = source["profile"]
                 _, created = self.store.add_request(item, source=source["kind"], source_ref=str(source["id"]))
                 added += int(created)
             self.store.complete_list_sync(source_id)
-            return {"found": len(items), "added": added}
+            return {
+                "found": len(items),
+                "added": added,
+                "skipped_existing": skipped_existing,
+            }
         except IntegrationError as error:
             self.store.complete_list_sync(source_id, str(error))
             raise
@@ -120,3 +136,22 @@ class Coordinator:
                     self.sync_list(source["id"])
                 except IntegrationError:
                     pass
+
+    def sync_plex_library(self) -> dict:
+        settings = self.store.get_settings(reveal_secrets=True)
+        section_ids = [
+            part.strip()
+            for part in settings.get("plex_sections", "").split(",")
+            if part.strip()
+        ]
+        if not settings.get("plex_url") or not settings.get("plex_token") or not section_ids:
+            raise IntegrationError("Add the Plex URL, token, and library section IDs in Settings")
+        try:
+            items = scan_plex_library(
+                settings["plex_url"], settings["plex_token"], section_ids
+            )
+            self.store.replace_plex_library(items)
+            return {"items": len(items), "status": self.store.plex_library_status()}
+        except IntegrationError as error:
+            self.store.fail_plex_library_sync(str(error))
+            raise

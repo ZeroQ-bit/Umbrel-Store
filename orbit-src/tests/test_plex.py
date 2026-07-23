@@ -1,0 +1,64 @@
+import unittest
+import xml.etree.ElementTree as ET
+from unittest.mock import patch
+
+from orbit import plex
+
+
+class PlexInventoryTests(unittest.TestCase):
+    def test_movie_versions_include_real_quality_and_ids(self):
+        section = ET.fromstring("""
+        <MediaContainer>
+          <Video ratingKey="101" type="movie" title="Dune" year="2021">
+            <Guid id="tmdb://438631"/><Guid id="imdb://tt1160419"/>
+            <Media videoResolution="4k" videoDynamicRange="DOVI" videoCodec="hevc"
+                   audioCodec="eac3" container="mkv" bitrate="22000" width="3840" height="2160">
+              <Part size="123456789" file="/movies/Dune.mkv"/>
+            </Media>
+            <Media videoResolution="1080" videoDynamicRange="SDR" videoCodec="h264"
+                   audioCodec="aac" container="mp4" height="1080">
+              <Part size="456789"/>
+            </Media>
+          </Video>
+        </MediaContainer>
+        """)
+        with patch.object(plex, "_plex_xml", return_value=section):
+            items = plex.scan_plex_library("http://plex", "token", ["4"])
+        self.assertEqual(items[0]["tmdb_id"], 438631)
+        self.assertEqual(items[0]["imdb_id"], "tt1160419")
+        self.assertEqual(items[0]["quality"], "4K Dolby Vision · 1080p")
+        self.assertFalse(items[0]["upgrade_available"])
+
+    def test_show_quality_is_aggregated_from_episodes(self):
+        shows = ET.fromstring("""
+        <MediaContainer>
+          <Directory ratingKey="201" type="show" title="Foundation" year="2021">
+            <Guid id="tmdb://93740"/>
+          </Directory>
+        </MediaContainer>
+        """)
+        episodes = ET.fromstring("""
+        <MediaContainer>
+          <Video ratingKey="202" type="episode" grandparentRatingKey="201">
+            <Media videoResolution="720" videoCodec="h264" audioCodec="aac" container="mkv">
+              <Part size="1000"/>
+            </Media>
+          </Video>
+          <Video ratingKey="203" type="episode" grandparentRatingKey="201">
+            <Media videoResolution="720" videoCodec="h264" audioCodec="aac" container="mkv">
+              <Part size="1200"/>
+            </Media>
+          </Video>
+        </MediaContainer>
+        """)
+        with patch.object(plex, "_plex_xml", side_effect=[shows, episodes]):
+            items = plex.scan_plex_library("http://plex", "token", ["5"])
+        self.assertEqual(items[0]["media_type"], "show")
+        self.assertEqual(items[0]["episode_count"], 2)
+        self.assertEqual(items[0]["quality"], "720p")
+        self.assertTrue(items[0]["upgrade_available"])
+        self.assertEqual(len(items[0]["versions"]), 1)
+
+
+if __name__ == "__main__":
+    unittest.main()
