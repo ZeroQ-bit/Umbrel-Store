@@ -26,8 +26,32 @@ class IntegrationTests(unittest.TestCase):
                 "https://mdblist.com/lists/example/great-films", "secret", 25
             )
         self.assertEqual(items[0]["tmdb_id"], 438631)
-        self.assertEqual(request.call_args.args[0], "https://api.mdblist.com/lists/example/great-films/items")
-        self.assertEqual(request.call_args.args[1]["Authorization"], "Bearer secret")
+        parsed = integrations.urllib.parse.urlparse(request.call_args.args[0])
+        self.assertEqual(parsed.path, "/lists/example/great-films/items")
+        self.assertEqual(
+            integrations.urllib.parse.parse_qs(parsed.query),
+            {"apikey": ["secret"], "limit": ["25"]},
+        )
+
+    def test_mdblist_current_response_buckets_are_combined(self):
+        payload = {
+            "movies": [{
+                "title": "Dune", "mediatype": "movie",
+                "ids": {"tmdb": 438631, "imdb": "tt1160419"},
+            }],
+            "shows": [{
+                "title": "Severance", "mediatype": "show",
+                "ids": {"tmdb": 95396, "imdb": "tt11280740"},
+            }],
+        }
+        with patch.object(integrations, "_json_request", return_value=payload):
+            items = integrations.fetch_mdblist(
+                "https://mdblist.com/lists/example/great-films", "secret", 25
+            )
+        self.assertEqual(
+            [(item["media_type"], item["title"]) for item in items],
+            [("movie", "Dune"), ("show", "Severance")],
+        )
 
     def test_trakt_nested_items_are_normalised(self):
         with patch.object(integrations, "_json_request", return_value=[{

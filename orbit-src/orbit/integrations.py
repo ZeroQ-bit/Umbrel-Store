@@ -104,12 +104,27 @@ def _normalise_item(item: dict) -> dict | None:
 def fetch_mdblist(list_url: str, api_key: str, limit: int = 100) -> list[dict]:
     if not api_key:
         raise IntegrationError("Add an MDBList API key in Settings")
-    payload = _json_request(_mdblist_api_url(list_url), {"Authorization": f"Bearer {api_key}"})
-    raw_items = payload.get("items", []) if isinstance(payload, dict) else payload
+    item_limit = max(1, min(limit, 1000))
+    parsed = urllib.parse.urlparse(_mdblist_api_url(list_url))
+    query = urllib.parse.parse_qs(parsed.query)
+    query.update({"apikey": [api_key], "limit": [str(item_limit)]})
+    endpoint = urllib.parse.urlunparse(parsed._replace(
+        query=urllib.parse.urlencode(query, doseq=True)
+    ))
+    payload = _json_request(endpoint)
+    if isinstance(payload, dict):
+        raw_items = payload.get("items")
+        if not isinstance(raw_items, list):
+            raw_items = [
+                *(payload.get("movies") or []),
+                *(payload.get("shows") or []),
+            ]
+    else:
+        raw_items = payload
     if not isinstance(raw_items, list):
         raise IntegrationError("MDBList returned an unsupported list response")
     items = []
-    for raw in raw_items[: max(1, min(limit, 1000))]:
+    for raw in raw_items[:item_limit]:
         normalised = _normalise_item(raw)
         if normalised:
             items.append(normalised)
