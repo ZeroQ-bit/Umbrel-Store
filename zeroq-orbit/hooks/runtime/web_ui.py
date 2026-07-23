@@ -53,10 +53,10 @@ CONFIG_SCHEMA = [
      {"show_if": {"DEBRID_MODE": "webdav"}, "help": "rclone vendor: 'other' for TorBox."}),
     ("DEBRID_WEBDAV_USER", "TorBox WebDAV Username", "text", "",
      {"show_if": {"DEBRID_MODE": "webdav"},
-      "help": "From TorBox → Settings → WebDAV. NOT your login or API key."}),
+      "help": 'Use your TorBox email, or "torbox" when using an API key.'}),
     ("DEBRID_WEBDAV_PASS", "TorBox WebDAV Password", "password", "",
      {"show_if": {"DEBRID_MODE": "webdav"},
-      "help": "From TorBox → Settings → WebDAV. Dedicated WebDAV password."}),
+      "help": "Use your TorBox account password, or your API key."}),
     # Real-Debrid via zurg
     ("DEBRID_ZURG_TOKEN", "Real-Debrid API Token", "password", "",
      {"show_if": {"DEBRID_MODE": "zurg"},
@@ -402,6 +402,11 @@ class Mount:
 
     def status(self):
         safety = safety_status()
+        last_error = STARTUP_SAFETY_ERROR
+        if not self.is_mounted and self.proc and self.proc.poll() is not None:
+            log_lines = [line.strip() for line in tail(RCLONE_LOG, 20).splitlines() if line.strip()]
+            if log_lines:
+                last_error = log_lines[-1]
         return {
             "mounted": self.is_mounted,
             "mode": read_config().get("DEBRID_MODE", "webdav"),
@@ -409,6 +414,7 @@ class Mount:
             "persistent_media_cache": safety["legacy_cache_present"],
             "storage_safety_ok": safety["ok"],
             "storage_safety_error": safety["error"],
+            "last_error": last_error,
         }
 
     def _rclone_args(self):
@@ -477,6 +483,15 @@ class Mount:
             else:
                 if not write_rclone_config():
                     return False, "missing TorBox WebDAV username/password"
+                credential_result = test_webdav(
+                    cfg.get("DEBRID_WEBDAV_USER", ""),
+                    cfg.get("DEBRID_WEBDAV_PASS", ""),
+                    cfg.get("DEBRID_WEBDAV_URL"),
+                    cfg.get("DEBRID_WEBDAV_VENDOR", "other"),
+                )
+                if not credential_result.get("valid"):
+                    return False, "TorBox WebDAV test failed: {}".format(
+                        credential_result.get("error") or "authentication failed")
             try:
                 self._prepare()
             except Exception as exc:

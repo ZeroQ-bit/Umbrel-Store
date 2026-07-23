@@ -61,18 +61,29 @@ def _remote_json(url: str, method: str = "GET", payload: dict | None = None, tim
 
 def _sync_mount_settings(settings: dict):
     mode = settings.get("debrid_mode", "webdav")
+    webdav_user = settings.get("webdav_username", "")
+    webdav_pass = settings.get("webdav_password", "")
+    # TorBox officially supports API-key WebDAV authentication with the fixed
+    # username "torbox". Prefer it when available so SSO accounts and changed
+    # account passwords do not leave the mount offline.
+    if mode == "webdav" and settings.get("torbox_api_key"):
+        webdav_user = "torbox"
+        webdav_pass = settings["torbox_api_key"]
     payload = {
         "DEBRID_MODE": mode,
         "DEBRID_WEBDAV_URL": settings.get("webdav_url", "https://webdav.torbox.app"),
         "DEBRID_WEBDAV_VENDOR": "other",
-        "DEBRID_WEBDAV_USER": settings.get("webdav_username", ""),
-        "DEBRID_WEBDAV_PASS": settings.get("webdav_password", ""),
+        "DEBRID_WEBDAV_USER": webdav_user,
+        "DEBRID_WEBDAV_PASS": webdav_pass,
         "DEBRID_ZURG_TOKEN": settings.get("realdebrid_api_key", ""),
         "DEBRID_RCLONE_VFS_CACHE_MODE": "off",
         "DEBRID_RCLONE_DIR_CACHE_TIME": "1m",
         "DEBRID_RCLONE_LOG_LEVEL": "INFO",
     }
-    return _remote_json(MOUNT_API + "/api/config", "POST", payload)
+    configured = _remote_json(MOUNT_API + "/api/config", "POST", payload)
+    if configured.get("ok") is not True:
+        return configured
+    return _remote_json(MOUNT_API + "/api/mount/restart", "POST", {})
 
 
 def _sync_legacy_settings(settings: dict):
