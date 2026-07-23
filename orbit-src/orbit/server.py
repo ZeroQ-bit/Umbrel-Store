@@ -23,7 +23,7 @@ STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 PORT = int(os.environ.get("ORBIT_PORT", "8080"))
 MOUNT_API = os.environ.get("ORBIT_MOUNT_API", "http://mount:8080")
 LEGACY_CONFIG = os.environ.get("PD_CONFIG_DIR", "/config")
-VERSION = "0.3.0"
+VERSION = "0.3.1"
 SECRET_KEYS = {
     "tmdb_api_key", "mdblist_api_key", "trakt_client_id", "torbox_api_key",
     "webdav_password", "realdebrid_api_key", "plex_token",
@@ -313,7 +313,10 @@ class Handler(BaseHTTPRequestHandler):
                 source = store.add_list_source(body)
             except Exception as error:
                 return self._json({"error": str(error)}, 409)
-            return self._json({"list": source}, 201)
+            created = source.pop("created", True)
+            return self._json(
+                {"list": source, "created": created}, 201 if created else 200
+            )
         if path.startswith("/api/lists/") and path.endswith("/sync"):
             try:
                 source_id = int(path.split("/")[3])

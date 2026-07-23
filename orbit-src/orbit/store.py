@@ -395,18 +395,46 @@ class Store:
 
     def add_list_source(self, data: dict) -> dict:
         now = utc_now()
+        kind = str(data.get("kind", "mdblist")).strip().lower()
+        url = str(data["url"]).strip().rstrip("/")
+        max_items = max(1, min(int(data.get("max_items", 100)), 1000))
         with self._lock, self.connection() as db:
+            existing = db.execute(
+                """SELECT * FROM list_sources
+                   WHERE kind=? AND (url=? OR rtrim(url, '/')=?)
+                   ORDER BY id LIMIT 1""",
+                (kind, url, url),
+            ).fetchone()
+            if existing is not None:
+                db.execute(
+                    """UPDATE list_sources
+                       SET name=?, url=?, enabled=?, mode=?, profile=?, max_items=?
+                       WHERE id=?""",
+                    (
+                        data["name"], url, int(data.get("enabled", True)),
+                        data.get("mode", "import_only"), data.get("profile", "best"),
+                        max_items, existing["id"],
+                    ),
+                )
+                row = db.execute(
+                    "SELECT * FROM list_sources WHERE id=?", (existing["id"],)
+                ).fetchone()
+                result = dict(row)
+                result["created"] = False
+                return result
             cursor = db.execute(
                 """INSERT INTO list_sources(name, kind, url, enabled, mode, profile, max_items, created_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
-                    data["name"], data.get("kind", "mdblist"), data["url"],
+                    data["name"], kind, url,
                     int(data.get("enabled", True)), data.get("mode", "import_only"),
-                    data.get("profile", "best"), max(1, min(int(data.get("max_items", 100)), 1000)), now,
+                    data.get("profile", "best"), max_items, now,
                 ),
             )
             row = db.execute("SELECT * FROM list_sources WHERE id=?", (cursor.lastrowid,)).fetchone()
-        return dict(row)
+        result = dict(row)
+        result["created"] = True
+        return result
 
     def list_sources(self) -> list[dict]:
         with self.connection() as db:

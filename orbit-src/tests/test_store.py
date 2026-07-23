@@ -44,6 +44,25 @@ class StoreTests(unittest.TestCase):
         })
         self.assertEqual(source["mode"], "import_only")
         self.assertEqual(source["enabled"], 1)
+        self.assertTrue(source["created"])
+
+    def test_reconnecting_list_updates_existing_source(self):
+        first = self.store.add_list_source({
+            "name": "New releases", "kind": "mdblist",
+            "url": "https://mdblist.com/lists/example/new-releases/",
+            "profile": "best", "max_items": 100,
+        })
+        second = self.store.add_list_source({
+            "name": "New Releases On Stremio", "kind": "mdblist",
+            "url": "https://mdblist.com/lists/example/new-releases",
+            "profile": "1080p", "max_items": 1000,
+        })
+        self.assertEqual(first["id"], second["id"])
+        self.assertFalse(second["created"])
+        self.assertEqual(second["name"], "New Releases On Stremio")
+        self.assertEqual(second["profile"], "1080p")
+        self.assertEqual(second["max_items"], 1000)
+        self.assertEqual(len(self.store.list_sources()), 1)
 
     def test_library_link_promotes_request_to_ready(self):
         movies = os.path.join(self.temp.name, "Movies")
