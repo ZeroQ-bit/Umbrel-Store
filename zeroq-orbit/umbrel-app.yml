@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-orbit
 category: media
 name: Orbit
-version: "0.1.3"
+version: "0.1.4"
 tagline: Search, automate, mount, and deliver debrid media to Plex
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Umbrel-Store/master/zeroq-orbit/icon.png
 description: >-
@@ -36,9 +36,9 @@ defaultPassword: ""
 torOnly: false
 permissions: []
 releaseNotes: >-
-  Gives Orbit sole ownership of its debrid mount, clears disconnected legacy
-  FUSE sockets safely before startup, and removes the redundant plex_debrid
-  background process. Also includes TorBox API-key WebDAV login, credential
-  validation, automatic mount restart, and visible mount errors.
+  Detaches disconnected legacy FUSE sockets inside the mount container before
+  its supervisor starts. Orbit now owns the debrid mount without the redundant
+  plex_debrid worker and uses TorBox API-key WebDAV login with visible
+  credential and mount errors.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store
