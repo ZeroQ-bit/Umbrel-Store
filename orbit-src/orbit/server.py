@@ -250,6 +250,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"error": "invalid list"}, 400)
             except IntegrationError as error:
                 return self._json({"error": str(error)}, 400)
+        if path == "/api/mount/restart":
+            settings = store.get_settings(reveal_secrets=True)
+            return self._json(_sync_mount_settings(settings))
         if path.startswith("/api/mount/"):
             suffix = path.removeprefix("/api/mount")
             return self._json(_remote_json(MOUNT_API + "/api/mount" + suffix, "POST", body))
