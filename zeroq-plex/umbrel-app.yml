@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-plex
 category: media
 name: Plex (Vortexo)
-version: "1.43.3.10828.8"
+version: "1.43.3.10828.9"
 tagline: Stream Movies & TV Shows
 icon: https://avatars.githubusercontent.com/u/11744877?v=4
 description: >-
@@ -12,9 +12,9 @@ description: >-
   Plex uses a server to house your media library and player apps to playback the media. Add, access, and share all the entertainment that matters to you, on almost any device.
 
 
-  This ZeroQ package is intended to replace the stock Umbrel Plex app when you want direct integration with Debrid Mount's private, Files-invisible library.
+  This ZeroQ package is intended to replace the stock Umbrel Plex app when you want direct integration with Orbit's private, Files-invisible library.
 
-  Install and configure Debrid Mount first so `/downloads/.vortexo-source` is owned by a dedicated rclone/zurg app instead of the Vortexo Server container.
+  Install and configure Orbit first so `/downloads/.vortexo-source` is owned by Orbit's integrated debrid mount instead of the Vortexo Server container.
 
   Set Plex libraries to:
   - `/downloads/vortexo/Movies`
@@ -25,7 +25,7 @@ description: >-
 developer: Plex
 website: https://www.plex.tv/
 dependencies:
-  - zeroq-debrid-mount
+  - zeroq-orbit
 repo: ""
 support: https://www.plex.tv/
 port: 32400
@@ -40,7 +40,8 @@ torOnly: false
 permissions:
   - GPU
 releaseNotes: >-
-  Reads Debrid Mount's private shared filesystem through a read-only slave mount,
+  Replaces the legacy Debrid Mount dependency with Orbit. Plex continues to read
+  Orbit's private shared filesystem through a read-only slave mount,
   preventing Umbrel Files from indexing remote media while preserving the Plex
   library paths `/downloads/vortexo/Movies` and `/downloads/vortexo/TV`.
 
