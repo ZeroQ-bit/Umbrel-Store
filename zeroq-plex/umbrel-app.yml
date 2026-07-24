@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-plex
 category: media
 name: Plex (Vortexo)
-version: "1.43.3.10828.10"
+version: "1.43.3.10828.11"
 tagline: Plex Discover with private TorBox streaming
 icon: https://avatars.githubusercontent.com/u/11744877?v=4
 description: >-
@@ -43,9 +43,9 @@ torOnly: false
 permissions:
   - GPU
 releaseNotes: >-
-  Fixes the port 32401 gateway startup failure by moving every Nginx runtime
-  path into the companion's private writable directory. Plex Discover pages
-  can now load the Vortexo TorBox provider and dialog from the Umbrel tile.
+  Completes the port 32401 gateway repair by keeping Nginx's error log in its
+  private writable runtime directory and safely forwarding it to Umbrel
+  troubleshooting without reopening the protected container stderr path.
 
 
   Stock Plex remains available on port 32400 for native clients and rollback.
