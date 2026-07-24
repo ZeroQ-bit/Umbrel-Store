@@ -74,6 +74,74 @@ class StoreTests(unittest.TestCase):
         saved = self.store.save_progress("discover", 20, 100, False)
         self.assertTrue(saved["completed"])
 
+    def test_watchlist_state_is_persistent_and_job_linked(self):
+        media = {
+            "discover_id": "movie-discover",
+            "type": "movie",
+            "title": "Memento",
+            "imdb_id": "tt0209144",
+        }
+        detected = self.store.upsert_watchlist_item("movie:tt0209144", media)
+        self.assertEqual(detected["status"], "detected")
+        job, _ = self.store.create_or_get_job(
+            "movie-discover|release",
+            "movie-discover",
+            "stream-id",
+            {"media": media, "stream": {"info_hash": "release"}},
+        )
+        self.store.update_watchlist_item(
+            "movie:tt0209144",
+            "selected",
+            "Release selected",
+            job_id=job["id"],
+            increment_attempts=True,
+        )
+        self.store.update_watchlist_for_job(
+            job["id"], "plex_confirmed", "Plex confirmed the media version"
+        )
+        final = self.store.watchlist_item("movie:tt0209144")
+        self.assertEqual(final["status"], "plex_confirmed")
+        self.assertEqual(final["attempts"], 1)
+
+    def test_failed_library_job_can_be_retried_without_losing_history(self):
+        payload = {"media": {"title": "Memento"}, "stream": {"info_hash": "abc"}}
+        job, _ = self.store.create_or_get_job(
+            "discover|abc", "discover", "stream", payload
+        )
+        self.store.transition(job["id"], "failed", "TorBox was offline")
+        retried = self.store.retry_job(job["id"])
+        self.assertEqual(retried["status"], "selected")
+        self.assertEqual(
+            [event["status"] for event in retried["history"]],
+            ["selected", "failed", "selected"],
+        )
+
+    def test_only_nonterminal_library_jobs_are_resumable(self):
+        active, _ = self.store.create_or_get_job(
+            "active", "discover-active", "stream-active", {}
+        )
+        finished, _ = self.store.create_or_get_job(
+            "finished", "discover-finished", "stream-finished", {}
+        )
+        self.store.transition(finished["id"], "plex_confirmed", "Done")
+        self.assertEqual(
+            [job["id"] for job in self.store.resumable_jobs()],
+            [active["id"]],
+        )
+
+    def test_watchlist_sync_summary_persists_counts(self):
+        self.store.begin_watchlist_sync()
+        self.store.complete_watchlist_sync(
+            "completed",
+            "Queued one item",
+            {"found": 3, "queued": 1, "skipped_existing": 2},
+        )
+        status = self.store.watchlist_status()
+        self.assertEqual(status["status"], "completed")
+        self.assertEqual(status["found"], 3)
+        self.assertEqual(status["queued"], 1)
+        self.assertEqual(status["skipped_existing"], 2)
+
 
 if __name__ == "__main__":
     unittest.main()

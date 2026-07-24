@@ -26,6 +26,8 @@ account as the owner token in `Preferences.xml`, then sets an HTTP-only cookie.
 
 - `GET /vortexo/api/status`
 - `GET|PUT /vortexo/api/settings`
+- `GET /vortexo/api/watchlist`
+- `POST /vortexo/api/watchlist/sync`
 - `GET /vortexo/api/discover/{id}`
 - `GET /vortexo/api/discover/{id}/episodes`
 - `POST /vortexo/api/streams`
@@ -33,6 +35,21 @@ account as the owner token in `Preferences.xml`, then sets an HTTP-only cookie.
 - `POST /vortexo/api/progress`
 - `POST /vortexo/api/library-jobs`
 - `GET /vortexo/api/library-jobs/{id}`
+
+## Native Plex clients
+
+The optional Plex Watchlist coordinator runs entirely on the server. It reads
+the owner's universal Watchlist at a configurable interval (one minute by
+default), skips titles already present in a local Plex library or an active
+Vortexo job, and selects a cached addable release using the saved Best, 4K, or
+1080p profile and maximum-size limit. Movies are acquired directly. A newly
+requested TV show safely starts with its first regular episode rather than
+silently acquiring an entire series.
+
+Every selected release uses the same persistent library-job state machine as
+the manual Add to Plex action. Completed media is ordinary Plex library media,
+so it appears in native Plex clients without modifying those clients. Removing
+a title from the Plex Watchlist never deletes an existing file or Plex item.
 
 ## Verification
 

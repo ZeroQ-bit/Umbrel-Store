@@ -204,6 +204,71 @@ def normalize_media(raw: dict, fallback_discover_id: str = "") -> dict:
     }
 
 
+def normalize_plex_watchlist_item(raw: dict) -> dict | None:
+    media = normalize_media(raw)
+    if media["type"] not in {"movie", "show"}:
+        return None
+    if not media["discover_id"] or not (media["imdb_id"] or media["tmdb_id"]):
+        return None
+    return media
+
+
+def fetch_plex_watchlist(token: str, limit: int = 100) -> list[dict]:
+    """Fetch and normalize the signed-in Plex owner's universal Watchlist."""
+    if not token:
+        raise IntegrationError("Plex owner token is not available")
+    item_limit = max(1, min(int(limit), 1000))
+    endpoint = "https://discover.provider.plex.tv/library/sections/watchlist/all"
+    items = []
+    seen = set()
+    start = 0
+    while len(items) < item_limit:
+        page_size = min(50, item_limit - len(items))
+        query = urllib.parse.urlencode(
+            {
+                "includeAdvanced": "1",
+                "includeMeta": "1",
+                "includeExternalMedia": "1",
+                "includeGuids": "1",
+                "X-Plex-Container-Start": str(start),
+                "X-Plex-Container-Size": str(page_size),
+            }
+        )
+        payload = json_request(
+            f"{endpoint}?{query}",
+            headers=plex_headers(token),
+            timeout=20,
+        )
+        container = payload.get("MediaContainer", {}) if isinstance(payload, dict) else {}
+        rows = container.get("Metadata") or []
+        if not isinstance(rows, list):
+            raise IntegrationError("Plex returned an unsupported Watchlist response")
+        for raw in rows:
+            if not isinstance(raw, dict):
+                continue
+            media = normalize_plex_watchlist_item(raw)
+            if not media:
+                continue
+            identity = (
+                media["type"],
+                str(media.get("tmdb_id") or media.get("imdb_id") or media["discover_id"]),
+            )
+            if identity in seen:
+                continue
+            seen.add(identity)
+            items.append(media)
+            if len(items) >= item_limit:
+                break
+        start += len(rows)
+        try:
+            total_size = int(container.get("totalSize", start))
+        except (TypeError, ValueError):
+            total_size = start
+        if not rows or start >= total_size:
+            break
+    return items
+
+
 def fetch_streams(manifest_url: str, media: dict, season: int = 0, episode: int = 0) -> list[dict]:
     manifest_url = manifest_url.strip()
     if not manifest_url:
@@ -418,6 +483,53 @@ def deduplicate_streams(streams: list[dict]) -> list[dict]:
         seen.add(key)
         unique.append(stream)
     return sorted(unique, key=stream_sort_key, reverse=True)
+
+
+def select_automatic_stream(
+    streams: list[dict],
+    profile: str = "best",
+    *,
+    cached_only: bool = True,
+    max_size_gb: float = 0,
+) -> dict | None:
+    candidates = [
+        stream for stream in streams
+        if stream.get("can_add") and (stream.get("cached") or not cached_only)
+    ]
+    if max_size_gb > 0:
+        candidates = [
+            stream for stream in candidates
+            if not stream.get("size_gb") or float(stream["size_gb"]) <= max_size_gb
+        ]
+    if not candidates:
+        return None
+    quality_rank = {"4K": 5, "1440p": 4, "1080p": 3, "720p": 2, "480p": 1}
+    profile = profile if profile in {"best", "4k", "1080p"} else "best"
+    if profile == "1080p":
+        preferred = [
+            stream for stream in candidates
+            if quality_rank.get(stream.get("quality"), 0) <= quality_rank["1080p"]
+        ]
+        if preferred:
+            candidates = preferred
+
+    def selection_key(stream: dict):
+        rank = quality_rank.get(stream.get("quality"), 0)
+        if profile == "4k":
+            profile_rank = 2 if stream.get("quality") == "4K" else 1
+        elif profile == "1080p":
+            profile_rank = 2 if stream.get("quality") == "1080p" else 1
+        else:
+            profile_rank = 1
+        return (
+            1 if stream.get("cached") else 0,
+            profile_rank,
+            rank,
+            float(stream.get("size_gb") or 0),
+            int(stream.get("seeders") or 0),
+        )
+
+    return max(candidates, key=selection_key)
 
 
 class TorBoxClient:

@@ -272,6 +272,12 @@
   }
 
   function renderSettings(container, status = {}) {
+    const watchlist = status.watchlist || {};
+    const sync = watchlist.sync || {};
+    const pollMinutes = Number(status.plex_watchlist_poll_minutes || watchlist.poll_minutes || 1);
+    const profile = status.plex_watchlist_profile || watchlist.profile || "best";
+    const enabled = Boolean(status.plex_watchlist_enabled ?? watchlist.enabled ?? false);
+    const cachedOnly = Boolean(status.plex_watchlist_cached_only ?? watchlist.cached_only ?? true);
     container.innerHTML = `
       <div class="vortexo-setup">
         <div class="vortexo-callout">
@@ -288,12 +294,62 @@
         <label>TorBox WebDAV URL
           <input type="url" data-vortexo-webdav value="https://webdav.torbox.app">
         </label>
+        <div class="vortexo-callout">
+          <strong>Use TorBox from every Plex client</strong>
+          <p>Add a title to the normal Plex Watchlist. Vortexo selects a cached release, adds it to the Plex library, and Plex clients see it as regular media. TV shows safely start with the first regular episode.</p>
+        </div>
+        <label class="vortexo-check">
+          <input type="checkbox" data-vortexo-watchlist-enabled ${enabled ? "checked" : ""}>
+          <span>Automatically import my Plex Watchlist</span>
+        </label>
+        <div class="vortexo-settings-grid">
+          <label>Check Watchlist
+            <select data-vortexo-watchlist-interval>
+              ${[1, 5, 15, 30, 60].map(value => `<option value="${value}" ${pollMinutes === value ? "selected" : ""}>Every ${value} minute${value === 1 ? "" : "s"}</option>`).join("")}
+            </select>
+          </label>
+          <label>Automatic quality
+            <select data-vortexo-watchlist-profile>
+              <option value="best" ${profile === "best" ? "selected" : ""}>Best available</option>
+              <option value="4k" ${profile === "4k" ? "selected" : ""}>Prefer 4K</option>
+              <option value="1080p" ${profile === "1080p" ? "selected" : ""}>Prefer 1080p</option>
+            </select>
+          </label>
+          <label>Maximum release size (GB)
+            <input type="number" min="0" max="1000" step="1" data-vortexo-watchlist-size value="${Number(status.plex_watchlist_max_size_gb ?? 80)}">
+          </label>
+          <label>Maximum Watchlist items
+            <input type="number" min="1" max="1000" step="1" data-vortexo-watchlist-limit value="${Number(status.plex_watchlist_max_items ?? 100)}">
+          </label>
+        </div>
+        <label class="vortexo-check">
+          <input type="checkbox" data-vortexo-watchlist-cached ${cachedOnly ? "checked" : ""}>
+          <span>Cached TorBox releases only</span>
+        </label>
         <div class="vortexo-actions">
+          <button class="vortexo-secondary" data-vortexo-sync>Sync Watchlist now</button>
           <button class="vortexo-primary" data-vortexo-save>Save and connect</button>
         </div>
-        <p class="vortexo-form-status" role="status"></p>
+        <p class="vortexo-form-status" role="status">${escapeHTML(sync.detail || "")}</p>
       </div>`;
     const save = container.querySelector("[data-vortexo-save]");
+    const syncNow = container.querySelector("[data-vortexo-sync]");
+    syncNow.addEventListener("click", async () => {
+      const statusLine = container.querySelector(".vortexo-form-status");
+      syncNow.disabled = true;
+      statusLine.textContent = "Reading Plex Watchlist…";
+      try {
+        const result = await api("/vortexo/api/watchlist/sync", {
+          method: "POST",
+          body: "{}",
+        });
+        statusLine.textContent = result.detail || "Watchlist sync completed";
+      } catch (error) {
+        statusLine.textContent = error.message;
+      } finally {
+        syncNow.disabled = false;
+      }
+    });
     save.addEventListener("click", async () => {
       const statusLine = container.querySelector(".vortexo-form-status");
       const key = container.querySelector("[data-vortexo-key]").value.trim();
@@ -308,6 +364,13 @@
             ...(key ? {torbox_api_key: key} : {}),
             stream_manifest_urls: manifests,
             webdav_url: container.querySelector("[data-vortexo-webdav]").value.trim(),
+            plex_watchlist_enabled: container.querySelector("[data-vortexo-watchlist-enabled]").checked,
+            plex_watchlist_poll_minutes: Number(container.querySelector("[data-vortexo-watchlist-interval]").value),
+            plex_watchlist_profile: container.querySelector("[data-vortexo-watchlist-profile]").value,
+            plex_watchlist_max_size_gb: Number(container.querySelector("[data-vortexo-watchlist-size]").value),
+            plex_watchlist_max_items: Number(container.querySelector("[data-vortexo-watchlist-limit]").value),
+            plex_watchlist_cached_only: container.querySelector("[data-vortexo-watchlist-cached]").checked,
+            plex_watchlist_show_mode: "first_episode",
           }),
         });
         statusLine.textContent = "Connected. Opening streams…";

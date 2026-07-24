@@ -32,6 +32,8 @@ class UIContractTests(unittest.TestCase):
             "vortexo-player-overlay",
             'event.key !== "Escape"',
             'window.addEventListener("popstate"',
+            "Automatically import my Plex Watchlist",
+            "/vortexo/api/watchlist/sync",
         ):
             self.assertIn(expected, self.javascript)
 
