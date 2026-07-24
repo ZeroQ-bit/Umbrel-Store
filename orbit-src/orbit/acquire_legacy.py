@@ -22,6 +22,66 @@ class OrbitWatchlist:
         return None
 
 
+def replacement_scope(job: dict) -> dict | None:
+    if job.get("source") != "library-replace":
+        return None
+    try:
+        value = json.loads(job.get("source_ref") or "{}")
+    except (TypeError, json.JSONDecodeError):
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def restrict_replacement_item(item, scope: dict) -> bool:
+    """Limit a matched legacy show to the requested season or episode."""
+    target = scope.get("scope")
+    if target in {"movie", "series"}:
+        return True
+    try:
+        season_number = int(scope.get("season_number"))
+    except (TypeError, ValueError):
+        return False
+    seasons = [
+        season for season in getattr(item, "Seasons", [])
+        if int(getattr(season, "index", -1)) == season_number
+    ]
+    if not seasons:
+        return False
+    if target == "episode":
+        try:
+            episode_number = int(scope.get("episode_number"))
+        except (TypeError, ValueError):
+            return False
+        seasons[0].Episodes = [
+            episode for episode in getattr(seasons[0], "Episodes", [])
+            if int(getattr(episode, "index", -1)) == episode_number
+        ]
+        if not seasons[0].Episodes:
+            return False
+    elif target != "season":
+        return False
+    item.Seasons = seasons
+    return True
+
+
+def apply_quality_profile(releases, profile: str) -> None:
+    if profile not in {"1080p", "4k"}:
+        return
+    resolution = "2160" if profile == "4k" else "1080"
+    releases.sort.versions = [[
+        f"{'4K' if profile == '4k' else '1080p'} replacement",
+        [["retries", "<=", "48"], ["media type", "all", ""]],
+        "true",
+        [
+            ["cache status", "requirement", "cached", ""],
+            ["resolution", "requirement", "==", resolution],
+            ["size", "preference", "highest", ""],
+            ["seeders", "preference", "highest", ""],
+            ["size", "requirement", ">=", "0.1"],
+        ],
+    ]]
+
+
 def load_engine_settings(ui) -> None:
     """Apply legacy settings migrations without prompting a background worker."""
     original_input = builtins.input
@@ -48,6 +108,7 @@ def main() -> int:
     # content first leaves content.services partially initialized.
     import ui  # type: ignore
     import content  # type: ignore
+    import releases  # type: ignore
     from content.services import overseerr, plex, trakt  # type: ignore
     from ui.ui_print import set_log_dir  # type: ignore
 
@@ -55,6 +116,7 @@ def main() -> int:
     ui.service_mode = True
     set_log_dir(config_dir)
     load_engine_settings(ui)
+    apply_quality_profile(releases, job.get("profile") or "best")
 
     media = SimpleNamespace(
         id=job["id"],
@@ -82,6 +144,13 @@ def main() -> int:
 
     item.match(matching_service)
     item.watchlist = OrbitWatchlist
+    scope = replacement_scope(job)
+    if scope is not None and not restrict_replacement_item(item, scope):
+        print(json.dumps({
+            "ok": False,
+            "detail": "The selected season or episode is no longer available in Plex metadata",
+        }))
+        return 4
     libraries = content.classes.library()
     if not libraries:
         print(json.dumps({"ok": False, "detail": "Configure a Plex or Trakt library service"}))
@@ -99,7 +168,7 @@ def main() -> int:
         }))
         return 0
 
-    item.download(library=library)
+    item.download(library=[] if scope is not None else library)
     releases = getattr(item, "downloaded_releases", [])
     if not releases:
         print(json.dumps({"ok": False, "detail": "No suitable cached release was acquired"}))

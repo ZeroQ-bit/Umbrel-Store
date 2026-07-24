@@ -39,13 +39,23 @@ class PlexInventoryTests(unittest.TestCase):
         """)
         episodes = ET.fromstring("""
         <MediaContainer>
-          <Video ratingKey="202" type="episode" grandparentRatingKey="201">
+          <Video ratingKey="202" type="episode" grandparentRatingKey="201"
+                 index="1" title="The Emperor's Peace" duration="3600000"
+                 originallyAvailableAt="2021-09-24">
             <attr />
             <Media videoResolution="720" videoCodec="h264" audioCodec="aac" container="mkv">
-              <Part size="1000"/>
+              <Part size="1000">
+                <Stream id="10" streamType="1" codec="h264" width="1280" height="720"
+                        displayTitle="720p H.264" selected="1"/>
+                <Stream id="11" streamType="2" codec="aac" language="English"
+                        channels="6"/>
+                <Stream id="12" streamType="3" codec="srt" language="English"
+                        forced="1"/>
+              </Part>
             </Media>
           </Video>
-          <Video ratingKey="203" type="episode" grandparentRatingKey="201" parentIndex="2">
+          <Video ratingKey="203" type="episode" grandparentRatingKey="201"
+                 parentIndex="2" index="1" title="In Seldon's Shadow">
             <Media videoResolution="720" videoCodec="h264" audioCodec="aac" container="mkv">
               <Part size="1200"/>
             </Media>
@@ -61,6 +71,16 @@ class PlexInventoryTests(unittest.TestCase):
         self.assertEqual(len(items[0]["versions"]), 1)
         self.assertEqual(items[0]["seasons"][0]["title"], "Specials")
         self.assertEqual(items[0]["seasons"][1]["title"], "Season 2")
+        episode = items[0]["seasons"][0]["episodes"][0]
+        self.assertEqual(episode["title"], "The Emperor's Peace")
+        self.assertEqual(episode["episode_number"], 1)
+        self.assertEqual(episode["duration"], 3600000)
+        self.assertEqual(
+            [stream["type"] for stream in episode["versions"][0]["streams"]],
+            ["video", "audio", "subtitle"],
+        )
+        self.assertTrue(episode["versions"][0]["streams"][0]["selected"])
+        self.assertTrue(episode["versions"][0]["streams"][2]["forced"])
 
     def test_stream_metadata_fills_missing_media_resolution(self):
         node = ET.fromstring("""

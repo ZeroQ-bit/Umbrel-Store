@@ -171,6 +171,47 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(result["added"], 1)
         self.assertEqual(self.store.list_requests()[0]["title"], "Arrival")
 
+    def test_library_replacements_are_scoped_and_retry_safe(self):
+        self.store.replace_plex_library([{
+            "plex_rating_key": "201", "section_id": "5", "media_type": "show",
+            "title": "Foundation", "year": 2021, "tmdb_id": 93740,
+            "quality": "1080p", "versions": [], "episode_count": 2,
+            "seasons": [{
+                "number": 1, "title": "Season 1", "episode_count": 2,
+                "quality": "1080p",
+                "episodes": [
+                    {"episode_number": 1, "title": "The Emperor's Peace", "versions": []},
+                    {"episode_number": 2, "title": "Preparing to Live", "versions": []},
+                ],
+            }],
+        }])
+        item = self.store.list_plex_library(media_type="show")[0]
+        detailed = self.store.get_plex_library_item(item["id"])
+        self.assertNotIn("episodes", item["seasons"][0])
+        self.assertEqual(len(detailed["seasons"][0]["episodes"]), 2)
+
+        request, created = self.store.queue_library_replacement(
+            detailed, "episode", 1, 2, "1080p"
+        )
+        duplicate, duplicated = self.store.queue_library_replacement(
+            detailed, "episode", 1, 2, "1080p"
+        )
+        season, season_created = self.store.queue_library_replacement(
+            detailed, "season", 1, profile="best"
+        )
+
+        self.assertTrue(created)
+        self.assertFalse(duplicated)
+        self.assertEqual(request["id"], duplicate["id"])
+        self.assertTrue(season_created)
+        self.assertNotEqual(request["media_key"], season["media_key"])
+        scope = __import__("json").loads(request["source_ref"])
+        self.assertEqual(scope["episode_number"], 2)
+        self.assertEqual(request["source"], "library-replace")
+
+        with self.assertRaisesRegex(ValueError, "not in the current Plex inventory"):
+            self.store.queue_library_replacement(detailed, "episode", 1, 99)
+
     def test_series_completion_only_queues_owned_identified_shows(self):
         self.store.replace_plex_library([
             {

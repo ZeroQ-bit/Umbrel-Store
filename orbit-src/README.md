@@ -9,6 +9,10 @@ library organization, and Plex refresh into one visible pipeline.
 - TMDb-powered manual movie and TV search
 - Existing Plex library inventory with actual resolution, HDR/Dolby Vision,
   codecs, containers, file sizes, and multi-version visibility
+- Series, season, and episode drill-down with video, audio, and subtitle track
+  inspection
+- Scoped replacement searches for a movie, full series, season, or individual
+  episode, with Best, 1080p, and 4K targets
 - TMDb/IMDb matching that marks Discover results already in Plex
 - Explicit 1080p upgrades for lower-quality Plex items
 - Optional series completion that fills missing aired episodes for shows already
@@ -18,6 +22,8 @@ library organization, and Plex refresh into one visible pipeline.
 - Existing TorBox/Real-Debrid acquisition engine reused as an isolated worker
 - Existing WebDAV/zurg FUSE mount reused as a separate least-privilege service
 - One authenticated Orbit dashboard and one Umbrel app icon
+- Tabbed feature settings for Discovery, Debrid, Plex, Scrapers, and Series
+- Configurable Torrentio, Prowlarr, Jackett, Orionoid, Nyaa, and 1337x scrapers
 - Remote source media with persistent VFS caching forced off
 
 ## Architecture
@@ -55,5 +61,7 @@ Trakt never deletes Plex media, debrid torrents, or library links, and items
 already present in Plex are skipped. Plex refresh failures preserve the last
 successful inventory. Series completion is opt-in and has a configurable daily
 limit; it only monitors shows with at least one episode already in Plex.
+Replacement searches keep the current Plex stream available while the new
+release is acquired, so a failed search does not remove playable media.
 Persistent source-media caching remains disabled; only Orbit state, logs, and
 library symlinks are stored locally.

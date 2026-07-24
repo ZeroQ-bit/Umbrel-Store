@@ -102,6 +102,30 @@ def _media_versions(node: ET.Element) -> list[dict]:
             bitrate = int(media.get("bitrate") or 0)
         except ValueError:
             bitrate = 0
+        streams = []
+        for stream in media.findall(".//Stream"):
+            stream_type = {
+                "1": "video",
+                "2": "audio",
+                "3": "subtitle",
+            }.get(stream.get("streamType", ""), "other")
+            streams.append({
+                "id": stream.get("id") or "",
+                "type": stream_type,
+                "codec": (stream.get("codec") or "").upper(),
+                "language": stream.get("language") or stream.get("languageCode") or "",
+                "title": (
+                    stream.get("extendedDisplayTitle")
+                    or stream.get("displayTitle")
+                    or stream.get("title")
+                    or ""
+                ),
+                "channels": stream.get("channels") or "",
+                "width": stream.get("width") or "",
+                "height": stream.get("height") or "",
+                "selected": stream.get("selected") == "1",
+                "forced": stream.get("forced") == "1",
+            })
         versions.append({
             "resolution": _normalise_resolution(media),
             "dynamic_range": _dynamic_range(media),
@@ -117,6 +141,7 @@ def _media_versions(node: ET.Element) -> list[dict]:
             "bitrate": bitrate,
             "size": size,
             "file": part.get("file", "") if part is not None else "",
+            "streams": streams,
         })
     return versions
 
@@ -238,10 +263,31 @@ def scan_plex_library(base_url: str, token: str, section_ids: list[str]) -> list
                         "title": "Specials" if season_number == 0 else f"Season {season_number}",
                         "episode_count": 0,
                         "versions": [],
+                        "episodes": [],
                     }
                     show["seasons"].append(season)
                 season["episode_count"] += 1
                 season["versions"].extend(episode_versions)
+                try:
+                    episode_number = int(episode.get("index") or 0)
+                except ValueError:
+                    episode_number = 0
+                try:
+                    duration = int(episode.get("duration") or 0)
+                except ValueError:
+                    duration = 0
+                season["episodes"].append({
+                    "plex_rating_key": episode.get("ratingKey") or "",
+                    "season_number": season_number,
+                    "episode_number": episode_number,
+                    "title": episode.get("title") or f"Episode {episode_number}",
+                    "summary": episode.get("summary") or "",
+                    "aired_at": episode.get("originallyAvailableAt") or "",
+                    "duration": duration,
+                    "thumb": episode.get("thumb") or "",
+                    "quality": quality_summary(episode_versions),
+                    "versions": episode_versions,
+                })
             for show in shows.values():
                 show["versions"] = _distinct_qualities(show["versions"])
                 show["quality"] = quality_summary(show["versions"])
@@ -250,6 +296,7 @@ def scan_plex_library(base_url: str, token: str, section_ids: list[str]) -> list
                     season["versions"] = _distinct_qualities(season["versions"])
                     season["quality"] = quality_summary(season["versions"])
                     season.pop("versions")
+                    season["episodes"].sort(key=lambda item: item["episode_number"])
                 show["seasons"].sort(key=lambda item: item["number"])
                 items.append(show)
     return items

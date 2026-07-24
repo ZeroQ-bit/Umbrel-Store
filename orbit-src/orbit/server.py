@@ -23,10 +23,11 @@ STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 PORT = int(os.environ.get("ORBIT_PORT", "8080"))
 MOUNT_API = os.environ.get("ORBIT_MOUNT_API", "http://mount:8080")
 LEGACY_CONFIG = os.environ.get("PD_CONFIG_DIR", "/config")
-VERSION = "0.4.2"
+VERSION = "0.5.0"
 SECRET_KEYS = {
     "tmdb_api_key", "mdblist_api_key", "trakt_client_id", "torbox_api_key",
-    "webdav_password", "realdebrid_api_key", "plex_token",
+    "webdav_password", "realdebrid_api_key", "plex_token", "prowlarr_api_key",
+    "jackett_api_key", "orionoid_api_key",
 }
 DEFAULT_VERSION = [
     "1080p SDR",
@@ -98,6 +99,11 @@ def _sync_legacy_settings(settings: dict):
         legacy = {}
     provider = "Real Debrid" if settings.get("debrid_mode") == "zurg" else "TorBox"
     plex_sections = [part.strip() for part in settings.get("plex_sections", "").split(",") if part.strip()]
+    scrapers = [
+        name for name in ("torrentio", "prowlarr", "jackett", "orionoid", "nyaa", "1337x")
+        if str(settings.get(f"scraper_{name}", "true" if name == "torrentio" else "false")).lower()
+        in {"1", "true", "yes", "on"}
+    ]
     legacy.update({
         "Debrid Services": [provider],
         "TorBox API Key": settings.get("torbox_api_key", ""),
@@ -112,7 +118,14 @@ def _sync_legacy_settings(settings: dict):
         "Library collection service": ["Plex Library"],
         "Library update services": ["Plex Libraries"],
         "Library ignore services": ["Plex Discover Watch Status"],
-        "Sources": legacy.get("Sources") or ["torrentio"],
+        "Sources": scrapers or ["torrentio"],
+        "Torrentio Scraper Parameters": settings.get("torrentio_url", "")
+        or "https://torrentio.strem.fun/sort=qualitysize|qualityfilter=480p,scr,cam/manifest.json",
+        "Prowlarr Base URL": settings.get("prowlarr_url", "http://127.0.0.1:9696"),
+        "Prowlarr API Key": settings.get("prowlarr_api_key", ""),
+        "Jackett Base URL": settings.get("jackett_url", "http://127.0.0.1:9117"),
+        "Jackett API Key": settings.get("jackett_api_key", ""),
+        "Orionoid API Key": settings.get("orionoid_api_key", ""),
         "Versions": legacy.get("Versions") or [DEFAULT_VERSION],
         "Symlinker Enabled": "true",
         "Symlinker Mount Path": "/downloads",
@@ -222,6 +235,15 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"events": store.events(request_id)})
         if path == "/api/lists":
             return self._json({"lists": store.list_sources()})
+        if path.startswith("/api/library/") and path.count("/") == 3:
+            try:
+                item_id = int(path.split("/")[3])
+            except (IndexError, ValueError):
+                return self._json({"error": "invalid library item"}, 400)
+            item = store.get_plex_library_item(item_id)
+            if not item:
+                return self._json({"error": "library item not found"}, 404)
+            return self._json({"item": item})
         if path.startswith("/api/library/") and path.endswith("/artwork"):
             try:
                 item_id = int(path.split("/")[3])
@@ -281,8 +303,23 @@ class Handler(BaseHTTPRequestHandler):
                 "debrid_mode", "torbox_api_key", "realdebrid_api_key", "webdav_url",
                 "webdav_username", "webdav_password", "plex_url", "plex_token", "plex_username",
                 "plex_sections", "complete_aired_series", "series_completion_daily_limit",
+                "scraper_torrentio", "scraper_prowlarr", "scraper_jackett",
+                "scraper_orionoid", "scraper_nyaa", "scraper_1337x",
+                "torrentio_url", "prowlarr_url", "prowlarr_api_key",
+                "jackett_url", "jackett_api_key", "orionoid_api_key",
             }
             values = {key: value for key, value in body.items() if key in allowed}
+            scraper_keys = {key for key in allowed if key.startswith("scraper_")}
+            if scraper_keys.intersection(body):
+                scraper_values = {
+                    key: values.get(key, "false") for key in scraper_keys
+                }
+                if not any(
+                    str(value).lower() in {"1", "true", "yes", "on"}
+                    for value in scraper_values.values()
+                ):
+                    return self._json({"error": "Enable at least one scraper"}, 400)
+                values.update(scraper_values)
             store.set_settings(values, SECRET_KEYS)
             revealed = store.get_settings(reveal_secrets=True)
             _sync_legacy_settings(revealed)
@@ -331,6 +368,28 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"ok": True, **coordinator.sync_plex_library()})
             except IntegrationError as error:
                 return self._json({"error": str(error)}, 400)
+        if path.startswith("/api/library/") and path.endswith("/replace"):
+            try:
+                item_id = int(path.split("/")[3])
+            except (IndexError, ValueError):
+                return self._json({"error": "invalid library item"}, 400)
+            item = store.get_plex_library_item(item_id)
+            if not item:
+                return self._json({"error": "library item not found"}, 404)
+            try:
+                request, created = store.queue_library_replacement(
+                    item,
+                    str(body.get("scope") or ""),
+                    body.get("season_number"),
+                    body.get("episode_number"),
+                    str(body.get("profile") or "best"),
+                )
+            except (TypeError, ValueError) as error:
+                return self._json({"error": str(error)}, 400)
+            return self._json(
+                {"request": request, "created": created},
+                201 if created else 200,
+            )
         if path == "/api/mount/restart":
             settings = store.get_settings(reveal_secrets=True)
             return self._json(_sync_mount_settings(settings))

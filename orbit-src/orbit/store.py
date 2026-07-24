@@ -359,10 +359,19 @@ class Store:
         return (f"WHERE {' AND '.join(where)}" if where else "", values)
 
     @staticmethod
-    def _decode_library_row(row: sqlite3.Row) -> dict:
+    def _decode_library_row(row: sqlite3.Row, detailed: bool = True) -> dict:
         item = dict(row)
         item["versions"] = json.loads(item.pop("versions_json") or "[]")
         item["seasons"] = json.loads(item.pop("seasons_json") or "[]")
+        if not detailed:
+            item["versions"] = [
+                {key: value for key, value in version.items() if key != "streams"}
+                for version in item["versions"]
+            ]
+            item["seasons"] = [
+                {key: value for key, value in season.items() if key != "episodes"}
+                for season in item["seasons"]
+            ]
         item["upgrade_available"] = bool(item["upgrade_available"])
         return item
 
@@ -396,7 +405,7 @@ class Store:
                     ORDER BY {orders.get(sort, orders["title"])} LIMIT ? OFFSET ?""",
                 values,
             ).fetchall()
-        return [self._decode_library_row(row) for row in rows]
+        return [self._decode_library_row(row, detailed=False) for row in rows]
 
     def plex_library_stats(
         self, query: str = "", media_type: str = "", quality: str = "", status: str = ""
@@ -427,6 +436,114 @@ class Store:
                 "SELECT * FROM plex_library WHERE id=?", (item_id,)
             ).fetchone()
         return self._decode_library_row(row) if row else None
+
+    def queue_library_replacement(
+        self,
+        item: dict,
+        scope: str,
+        season_number: int | None = None,
+        episode_number: int | None = None,
+        profile: str = "best",
+    ) -> tuple[dict, bool]:
+        """Queue a safe, scoped replacement search for an existing Plex item."""
+        if scope not in {"movie", "series", "season", "episode"}:
+            raise ValueError("Choose movie, series, season, or episode replacement")
+        if item.get("media_type") == "movie" and scope != "movie":
+            raise ValueError("Movies only support whole-title replacement")
+        if item.get("media_type") == "show" and scope == "movie":
+            raise ValueError("Series replacement needs a series, season, or episode scope")
+        if scope in {"season", "episode"} and season_number is None:
+            raise ValueError("Choose a season")
+        if scope == "episode" and episode_number is None:
+            raise ValueError("Choose an episode")
+        if profile not in {"best", "1080p", "4k"}:
+            raise ValueError("Choose a supported quality target")
+        selected_season = None
+        if scope in {"season", "episode"}:
+            selected_season = next(
+                (
+                    season for season in item.get("seasons") or []
+                    if int(season.get("number", -1)) == int(season_number)
+                ),
+                None,
+            )
+            if selected_season is None:
+                raise ValueError("That season is not in the current Plex inventory")
+        if scope == "episode" and not any(
+            int(episode.get("episode_number", -1)) == int(episode_number)
+            for episode in selected_season.get("episodes") or []
+        ):
+            raise ValueError("That episode is not in the current Plex inventory")
+
+        tmdb_id = item.get("tmdb_id")
+        imdb_id = item.get("imdb_id") or ""
+        media_type = item["media_type"]
+        identity = f"tmdb:{media_type}:{tmdb_id}" if tmdb_id else f"imdb:{media_type}:{imdb_id}"
+        scope_key = scope
+        if season_number is not None:
+            scope_key += f":s{int(season_number):02d}"
+        if episode_number is not None:
+            scope_key += f":e{int(episode_number):02d}"
+        media_key = f"{identity}:replace:{scope_key}"
+        source_ref = json.dumps({
+            "scope": scope,
+            "season_number": season_number,
+            "episode_number": episode_number,
+            "plex_rating_key": item.get("plex_rating_key") or "",
+        }, separators=(",", ":"))
+        if scope == "movie":
+            detail = "Finding a replacement movie stream"
+        elif scope == "series":
+            detail = "Finding replacement streams for the full series"
+        elif scope == "season":
+            detail = f"Finding replacement streams for Season {season_number}"
+        else:
+            detail = (
+                f"Finding a replacement stream for "
+                f"S{int(season_number):02d}E{int(episode_number):02d}"
+            )
+        now = utc_now()
+        active_states = {"queued", "searching", "library_pending"}
+        with self._lock, self.connection() as db:
+            existing = db.execute(
+                "SELECT * FROM requests WHERE media_key=? ORDER BY id DESC LIMIT 1",
+                (media_key,),
+            ).fetchone()
+            if existing and existing["status"] in active_states:
+                return dict(existing), False
+            if existing:
+                db.execute(
+                    """UPDATE requests
+                       SET status='queued', status_detail=?, profile=?, source_ref=?,
+                           updated_at=?
+                       WHERE id=?""",
+                    (detail, profile, source_ref, now, existing["id"]),
+                )
+                request_id = existing["id"]
+            else:
+                cursor = db.execute(
+                    """INSERT INTO requests
+                       (media_key, media_type, title, year, tmdb_id, imdb_id,
+                        poster_path, overview, source, source_ref, status_detail,
+                        profile, created_at, updated_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, '', 'library-replace', ?, ?,
+                               ?, ?, ?)""",
+                    (
+                        media_key, media_type, item.get("title") or "Unknown",
+                        item.get("year"), tmdb_id, imdb_id, item.get("thumb") or "",
+                        source_ref, detail, profile, now, now,
+                    ),
+                )
+                request_id = cursor.lastrowid
+            db.execute(
+                """INSERT INTO request_events(request_id, state, detail, created_at)
+                   VALUES (?, 'queued', ?, ?)""",
+                (request_id, detail, now),
+            )
+            row = db.execute(
+                "SELECT * FROM requests WHERE id=?", (request_id,)
+            ).fetchone()
+        return dict(row), True
 
     def match_plex_library(self, item: dict) -> dict | None:
         media_type = "show" if item.get("media_type") in ("tv", "show") else "movie"
