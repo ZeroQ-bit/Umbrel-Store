@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import errno
 import json
 import os
 import signal
@@ -24,6 +25,14 @@ def _is_mountpoint(path: str) -> bool:
 def _filesystem_type(path: str) -> str:
     result = _run("findmnt", "-n", "-o", "FSTYPE", "-M", path)
     return result.stdout.strip() if result.returncode == 0 else ""
+
+
+def _is_disconnected(path: str) -> bool:
+    try:
+        os.stat(path)
+    except OSError as error:
+        return error.errno == errno.ENOTCONN
+    return False
 
 
 class MountSupervisor:
@@ -97,6 +106,21 @@ class MountSupervisor:
         os.chmod(temporary, 0o600)
         os.replace(temporary, self.config_path)
 
+    def _recover_stale_owned_mount(self):
+        if not _is_disconnected(self.mountpoint):
+            return
+        if not os.path.isfile(self.owner_marker):
+            raise RuntimeError(
+                "A disconnected mount exists without Plex Vortexo ownership evidence"
+            )
+        result = _run("fusermount3", "-uz", self.mountpoint)
+        if result.returncode != 0 or _is_disconnected(self.mountpoint):
+            raise RuntimeError("Could not detach the stale Plex Vortexo mount")
+        try:
+            os.unlink(self.owner_marker)
+        except FileNotFoundError:
+            pass
+
     def start(self):
         with self._lock:
             if self.process and self.process.poll() is None:
@@ -111,6 +135,7 @@ class MountSupervisor:
                 settings.get("webdav_url") or "https://webdav.torbox.app"
             ).rstrip("/")
             try:
+                self._recover_stale_owned_mount()
                 self.validate_storage()
                 self._write_config(api_key, webdav_url)
                 command = [
@@ -161,6 +186,14 @@ class MountSupervisor:
 
     def _stop_owned_process(self):
         process = self.process
+        if self.owned:
+            result = _run("fusermount3", "-u", self.mountpoint)
+            if result.returncode != 0:
+                result = _run("fusermount3", "-uz", self.mountpoint)
+            if result.returncode != 0 and (
+                _is_mountpoint(self.mountpoint) or _is_disconnected(self.mountpoint)
+            ):
+                self.error = "Owned TorBox mount could not be detached cleanly"
         if process and process.poll() is None:
             try:
                 os.killpg(process.pid, signal.SIGTERM)
@@ -173,12 +206,6 @@ class MountSupervisor:
                     os.killpg(process.pid, signal.SIGKILL)
                 except ProcessLookupError:
                     pass
-        if self.owned and _is_mountpoint(self.mountpoint):
-            # This branch is permitted only for the process started by this
-            # supervisor in this lifetime.
-            result = _run("fusermount3", "-u", self.mountpoint)
-            if result.returncode != 0:
-                self.error = "Owned rclone stopped, but its FUSE mount did not detach"
         self.process = None
         self.owned = False
         try:

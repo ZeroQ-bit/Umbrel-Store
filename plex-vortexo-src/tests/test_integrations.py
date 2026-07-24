@@ -141,6 +141,35 @@ class StreamNormalizationTests(unittest.TestCase):
         )
         self.assertEqual(stream["info_hash"], "abcdef123456")
 
+    def test_extracts_torbox_hash_and_file_index_from_torrentio_url(self):
+        info_hash = "a" * 40
+        stream = normalize_stream(
+            {
+                "url": (
+                    "https://torrentio.strem.fun/private-config/torbox/"
+                    f"private-account-token/{info_hash}/Movie.1080p.mkv/5/"
+                    "Movie.1080p.mkv"
+                ),
+                "behaviorHints": {"filename": "Movie.1080p.mkv"},
+            },
+            "Torrentio TB",
+        )
+        self.assertEqual(stream["info_hash"], info_hash)
+        self.assertEqual(stream["file_idx"], 5)
+        self.assertEqual(stream["magnet"], f"magnet:?xt=urn:btih:{info_hash}")
+        self.assertTrue(stream["can_add"])
+
+    def test_does_not_extract_hash_from_unrelated_stream_url(self):
+        stream = normalize_stream(
+            {
+                "url": f"https://stream.example/{'b' * 40}/Movie.mkv",
+                "behaviorHints": {"filename": "Movie.mkv"},
+            },
+            "Source",
+        )
+        self.assertFalse(stream["info_hash"])
+        self.assertFalse(stream["can_add"])
+
     def test_deduplicates_by_info_hash_and_sorts_cached_playable_first(self):
         rows = [
             {

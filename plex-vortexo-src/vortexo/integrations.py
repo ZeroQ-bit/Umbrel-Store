@@ -341,6 +341,23 @@ def normalize_stream(raw: dict, source_name: str, season: int = 0, episode: int 
     # Only a resolved stream URL is eligible for Play Now.
     url = str(raw.get("url") or "")
     info_hash = str(raw.get("infoHash") or "").lower()
+    url_file_idx = None
+    if url:
+        path_parts = [
+            urllib.parse.unquote(part)
+            for part in urllib.parse.urlparse(url).path.split("/")
+            if part
+        ]
+        for index, part in enumerate(path_parts):
+            if part.casefold() != "torbox" or index + 4 >= len(path_parts):
+                continue
+            candidate_hash = path_parts[index + 2].lower()
+            candidate_file_idx = path_parts[index + 4]
+            if re.fullmatch(r"[0-9a-f]{40}", candidate_hash):
+                info_hash = info_hash or candidate_hash
+                if candidate_file_idx.isdigit():
+                    url_file_idx = int(candidate_file_idx)
+                break
     torbox_id = (
         raw.get("torboxId")
         or raw.get("torrentId")
@@ -373,7 +390,7 @@ def normalize_stream(raw: dict, source_name: str, season: int = 0, episode: int 
         "info_hash": info_hash,
         "torbox_id": torbox_id,
         "magnet": magnet,
-        "file_idx": raw.get("fileIdx"),
+        "file_idx": raw.get("fileIdx") if raw.get("fileIdx") is not None else url_file_idx,
         "can_play_now": bool(url),
         "can_add": bool(torbox_id or magnet or info_hash),
         "season": season or None,
