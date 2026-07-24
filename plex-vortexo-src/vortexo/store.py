@@ -83,6 +83,34 @@ class Store:
                 );
                 CREATE INDEX IF NOT EXISTS library_job_events_job
                     ON library_job_events(job_id, id);
+                CREATE TABLE IF NOT EXISTS watchlist_items (
+                    identity TEXT PRIMARY KEY,
+                    discover_id TEXT NOT NULL,
+                    media_type TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    payload TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    detail TEXT NOT NULL,
+                    job_id TEXT,
+                    attempts INTEGER NOT NULL DEFAULT 0,
+                    next_retry_at INTEGER NOT NULL DEFAULT 0,
+                    last_seen_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS watchlist_items_job
+                    ON watchlist_items(job_id);
+                CREATE TABLE IF NOT EXISTS watchlist_sync (
+                    id INTEGER PRIMARY KEY CHECK (id = 1),
+                    status TEXT NOT NULL,
+                    detail TEXT NOT NULL,
+                    started_at INTEGER NOT NULL,
+                    completed_at INTEGER NOT NULL,
+                    found INTEGER NOT NULL DEFAULT 0,
+                    queued INTEGER NOT NULL DEFAULT 0,
+                    skipped_existing INTEGER NOT NULL DEFAULT 0,
+                    skipped_active INTEGER NOT NULL DEFAULT 0,
+                    unavailable INTEGER NOT NULL DEFAULT 0
+                );
                 """
             )
         os.chmod(self.path, 0o600)
@@ -351,3 +379,214 @@ class Store:
                 (job_id,),
             ).fetchone()
         return json.loads(row["payload"]) if row else None
+
+    def resumable_jobs(self) -> list[dict]:
+        with self.connection() as db:
+            rows = db.execute(
+                """
+                SELECT id, status FROM library_jobs
+                WHERE status NOT IN ('plex_confirmed', 'already_in_plex', 'failed')
+                ORDER BY created_at
+                """
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def retry_job(self, job_id: str, detail: str = "Retrying selected release") -> dict | None:
+        now = int(time.time())
+        with self._lock, self.connection() as db:
+            row = db.execute(
+                "SELECT status FROM library_jobs WHERE id=?",
+                (job_id,),
+            ).fetchone()
+            if not row or row["status"] != "failed":
+                return None
+            db.execute(
+                """
+                UPDATE library_jobs
+                SET status='selected', detail=?, updated_at=?
+                WHERE id=?
+                """,
+                (detail, now, job_id),
+            )
+            db.execute(
+                """
+                INSERT INTO library_job_events(job_id, status, detail, created_at)
+                VALUES (?, 'selected', ?, ?)
+                """,
+                (job_id, detail, now),
+            )
+        return self.job(job_id)
+
+    def upsert_watchlist_item(self, identity: str, media: dict) -> dict:
+        now = int(time.time())
+        with self._lock, self.connection() as db:
+            db.execute(
+                """
+                INSERT INTO watchlist_items(
+                    identity, discover_id, media_type, title, payload, status,
+                    detail, last_seen_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, 'detected', 'Detected in Plex Watchlist', ?, ?)
+                ON CONFLICT(identity) DO UPDATE SET
+                    discover_id=excluded.discover_id,
+                    media_type=excluded.media_type,
+                    title=excluded.title,
+                    payload=excluded.payload,
+                    last_seen_at=excluded.last_seen_at
+                """,
+                (
+                    identity,
+                    str(media.get("discover_id") or ""),
+                    str(media.get("type") or ""),
+                    str(media.get("title") or "Unknown"),
+                    json.dumps(media),
+                    now,
+                    now,
+                ),
+            )
+        return self.watchlist_item(identity) or {}
+
+    def update_watchlist_item(
+        self,
+        identity: str,
+        status: str,
+        detail: str,
+        *,
+        job_id: str | None = None,
+        next_retry_at: int = 0,
+        increment_attempts: bool = False,
+    ) -> dict | None:
+        now = int(time.time())
+        with self._lock, self.connection() as db:
+            db.execute(
+                """
+                UPDATE watchlist_items
+                SET status=?, detail=?, job_id=COALESCE(?, job_id),
+                    next_retry_at=?, attempts=attempts+?, updated_at=?
+                WHERE identity=?
+                """,
+                (
+                    status,
+                    detail,
+                    job_id,
+                    max(0, int(next_retry_at)),
+                    int(increment_attempts),
+                    now,
+                    identity,
+                ),
+            )
+        return self.watchlist_item(identity)
+
+    def update_watchlist_for_job(
+        self,
+        job_id: str,
+        status: str,
+        detail: str,
+        *,
+        next_retry_at: int = 0,
+    ):
+        now = int(time.time())
+        with self._lock, self.connection() as db:
+            db.execute(
+                """
+                UPDATE watchlist_items
+                SET status=?, detail=?, next_retry_at=?, updated_at=?
+                WHERE job_id=?
+                """,
+                (status, detail, max(0, int(next_retry_at)), now, job_id),
+            )
+
+    def watchlist_item(self, identity: str) -> dict | None:
+        with self.connection() as db:
+            row = db.execute(
+                """
+                SELECT identity, discover_id, media_type, title, status, detail,
+                       job_id, attempts, next_retry_at, last_seen_at, updated_at
+                FROM watchlist_items WHERE identity=?
+                """,
+                (identity,),
+            ).fetchone()
+        return dict(row) if row else None
+
+    def watchlist_items(self, limit: int = 100) -> list[dict]:
+        with self.connection() as db:
+            rows = db.execute(
+                """
+                SELECT identity, discover_id, media_type, title, status, detail,
+                       job_id, attempts, next_retry_at, last_seen_at, updated_at
+                FROM watchlist_items
+                ORDER BY last_seen_at DESC, title COLLATE NOCASE
+                LIMIT ?
+                """,
+                (max(1, min(int(limit), 500)),),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def begin_watchlist_sync(self):
+        now = int(time.time())
+        with self._lock, self.connection() as db:
+            db.execute(
+                """
+                INSERT INTO watchlist_sync(
+                    id, status, detail, started_at, completed_at,
+                    found, queued, skipped_existing, skipped_active, unavailable
+                ) VALUES (1, 'running', 'Reading Plex Watchlist', ?, 0, 0, 0, 0, 0, 0)
+                ON CONFLICT(id) DO UPDATE SET
+                    status='running', detail='Reading Plex Watchlist',
+                    started_at=excluded.started_at
+                """,
+                (now,),
+            )
+
+    def complete_watchlist_sync(self, status: str, detail: str, counts: dict | None = None):
+        now = int(time.time())
+        counts = counts or {}
+        with self._lock, self.connection() as db:
+            db.execute(
+                """
+                INSERT INTO watchlist_sync(
+                    id, status, detail, started_at, completed_at,
+                    found, queued, skipped_existing, skipped_active, unavailable
+                ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    status=excluded.status, detail=excluded.detail,
+                    completed_at=excluded.completed_at,
+                    found=excluded.found, queued=excluded.queued,
+                    skipped_existing=excluded.skipped_existing,
+                    skipped_active=excluded.skipped_active,
+                    unavailable=excluded.unavailable
+                """,
+                (
+                    status,
+                    detail,
+                    now,
+                    now,
+                    int(counts.get("found", 0)),
+                    int(counts.get("queued", 0)),
+                    int(counts.get("skipped_existing", 0)),
+                    int(counts.get("skipped_active", 0)),
+                    int(counts.get("unavailable", 0)),
+                ),
+            )
+
+    def watchlist_status(self) -> dict:
+        with self.connection() as db:
+            row = db.execute(
+                """
+                SELECT status, detail, started_at, completed_at, found, queued,
+                       skipped_existing, skipped_active, unavailable
+                FROM watchlist_sync WHERE id=1
+                """
+            ).fetchone()
+        if not row:
+            return {
+                "status": "never",
+                "detail": "Plex Watchlist has not been synced",
+                "started_at": 0,
+                "completed_at": 0,
+                "found": 0,
+                "queued": 0,
+                "skipped_existing": 0,
+                "skipped_active": 0,
+                "unavailable": 0,
+            }
+        return dict(row)

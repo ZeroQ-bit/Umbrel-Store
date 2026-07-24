@@ -25,12 +25,14 @@ from .integrations import (
     deduplicate_streams,
     discover_children,
     discover_metadata,
+    fetch_plex_watchlist,
     fetch_streams,
     json_request,
     normalise_title,
     plex_account,
     plex_headers,
     plex_owner_token,
+    select_automatic_stream,
     torrent_completed,
 )
 from .store import Store
@@ -87,9 +89,23 @@ class VortexoService:
         self._job_lock = threading.RLock()
         self._transcodes: dict[str, subprocess.Popen] = {}
         self._transcode_lock = threading.RLock()
+        self._watchlist_lock = threading.Lock()
+        self._watchlist_stop = threading.Event()
+        self._watchlist_thread: threading.Thread | None = None
         self.transcode_root = os.path.join(self.data_dir, "transcode")
         shutil.rmtree(self.transcode_root, ignore_errors=True)
         os.makedirs(self.transcode_root, mode=0o700, exist_ok=True)
+        for job in self.store.resumable_jobs():
+            self._start_library_job(job["id"])
+        if os.environ.get("VORTEXO_DISABLE_AUTOMATION", "").lower() not in {
+            "1", "true", "yes", "on",
+        }:
+            self._watchlist_thread = threading.Thread(
+                target=self._watchlist_loop,
+                name="vortexo-watchlist",
+                daemon=True,
+            )
+            self._watchlist_thread.start()
 
     @property
     def owner_token(self) -> str:
@@ -195,6 +211,7 @@ class VortexoService:
             "torbox": torbox,
             "source_lookup": source_lookup,
             "mount": mount,
+            "watchlist": self.watchlist_public(include_items=False),
             "version": "0.1.0",
         }
 
@@ -204,6 +221,24 @@ class VortexoService:
             "torbox_configured": bool(settings.get("torbox_api_key")),
             "stream_manifest_urls": list(settings.get("stream_manifest_urls") or []),
             "webdav_url": settings.get("webdav_url", "https://webdav.torbox.app"),
+            "plex_watchlist_enabled": bool(settings.get("plex_watchlist_enabled", False)),
+            "plex_watchlist_poll_minutes": int(
+                settings.get("plex_watchlist_poll_minutes", 1)
+            ),
+            "plex_watchlist_profile": settings.get("plex_watchlist_profile", "best"),
+            "plex_watchlist_max_items": int(
+                settings.get("plex_watchlist_max_items", 100)
+            ),
+            "plex_watchlist_cached_only": bool(
+                settings.get("plex_watchlist_cached_only", True)
+            ),
+            "plex_watchlist_max_size_gb": float(
+                settings.get("plex_watchlist_max_size_gb", 80)
+            ),
+            "plex_watchlist_show_mode": settings.get(
+                "plex_watchlist_show_mode", "first_episode"
+            ),
+            "watchlist": self.watchlist_public(include_items=False),
         }
 
     def update_settings(self, body: dict) -> dict:
@@ -234,18 +269,261 @@ class VortexoService:
             if parsed.scheme != "https" or not parsed.netloc:
                 raise IntegrationError("TorBox WebDAV must use a valid HTTPS URL")
             values["webdav_url"] = value.rstrip("/")
+        if "plex_watchlist_enabled" in body:
+            values["plex_watchlist_enabled"] = bool(body.get("plex_watchlist_enabled"))
+        if "plex_watchlist_poll_minutes" in body:
+            poll_minutes = int(body.get("plex_watchlist_poll_minutes") or 1)
+            if poll_minutes not in {1, 5, 15, 30, 60}:
+                raise IntegrationError("Choose a supported Plex Watchlist interval")
+            values["plex_watchlist_poll_minutes"] = poll_minutes
+        if "plex_watchlist_profile" in body:
+            profile = str(body.get("plex_watchlist_profile") or "best").lower()
+            if profile not in {"best", "4k", "1080p"}:
+                raise IntegrationError("Choose Best, 4K, or 1080p for Watchlist quality")
+            values["plex_watchlist_profile"] = profile
+        if "plex_watchlist_max_items" in body:
+            max_items = int(body.get("plex_watchlist_max_items") or 100)
+            if max_items < 1 or max_items > 1000:
+                raise IntegrationError("Plex Watchlist item limit must be between 1 and 1000")
+            values["plex_watchlist_max_items"] = max_items
+        if "plex_watchlist_cached_only" in body:
+            values["plex_watchlist_cached_only"] = bool(
+                body.get("plex_watchlist_cached_only")
+            )
+        if "plex_watchlist_max_size_gb" in body:
+            max_size_gb = float(body.get("plex_watchlist_max_size_gb") or 0)
+            if max_size_gb < 0 or max_size_gb > 1000:
+                raise IntegrationError("Watchlist maximum size must be between 0 and 1000 GB")
+            values["plex_watchlist_max_size_gb"] = max_size_gb
+        if "plex_watchlist_show_mode" in body:
+            show_mode = str(body.get("plex_watchlist_show_mode") or "first_episode")
+            if show_mode != "first_episode":
+                raise IntegrationError("Only safe first-episode TV imports are currently supported")
+            values["plex_watchlist_show_mode"] = show_mode
         if not values:
             return self.settings_public()
         updated = {**current, **values}
         if values.get("torbox_api_key"):
             TorBoxClient(updated["torbox_api_key"]).health()
         self.store.update_settings(values)
-        try:
-            json_request(f"{self.mount_api}/restart", method="POST", payload={}, timeout=5)
-        except IntegrationError:
-            # Saving configuration remains valid; mount health reports the real problem.
-            pass
+        if {"torbox_api_key", "webdav_url"}.intersection(values):
+            try:
+                json_request(f"{self.mount_api}/restart", method="POST", payload={}, timeout=5)
+            except IntegrationError:
+                # Saving configuration remains valid; mount health reports the real problem.
+                pass
         return self.settings_public()
+
+    def _watchlist_loop(self):
+        if self._watchlist_stop.wait(10):
+            return
+        while not self._watchlist_stop.is_set():
+            settings = self.store.settings()
+            if settings.get("plex_watchlist_enabled", False):
+                interval = max(
+                    60,
+                    int(settings.get("plex_watchlist_poll_minutes", 1)) * 60,
+                )
+                status = self.store.watchlist_status()
+                last_run = max(
+                    int(status.get("started_at") or 0),
+                    int(status.get("completed_at") or 0),
+                )
+                if int(time.time()) - last_run >= interval:
+                    try:
+                        self.sync_watchlist()
+                    except IntegrationError:
+                        pass
+            self._watchlist_stop.wait(15)
+
+    def watchlist_public(self, *, include_items: bool = True) -> dict:
+        settings = self.store.settings()
+        result = {
+            "enabled": bool(settings.get("plex_watchlist_enabled", False)),
+            "poll_minutes": int(settings.get("plex_watchlist_poll_minutes", 1)),
+            "profile": settings.get("plex_watchlist_profile", "best"),
+            "cached_only": bool(settings.get("plex_watchlist_cached_only", True)),
+            "show_mode": settings.get("plex_watchlist_show_mode", "first_episode"),
+            "sync": self.store.watchlist_status(),
+        }
+        if include_items:
+            result["items"] = self.store.watchlist_items(
+                int(settings.get("plex_watchlist_max_items", 100))
+            )
+        return result
+
+    @staticmethod
+    def _watchlist_identity(media: dict) -> str:
+        external_id = (
+            media.get("tmdb_id")
+            or media.get("imdb_id")
+            or media.get("discover_id")
+        )
+        return f"{media.get('type') or 'movie'}:{external_id}"
+
+    def _plex_has_media(self, media: dict) -> bool:
+        title = str(media.get("parent_title") or media.get("title") or "")
+        if not title:
+            return False
+        query = urllib.parse.urlencode({"query": title, "includeGuids": "1"})
+        payload = json_request(
+            f"{self.plex_base_url}/search?{query}",
+            headers=plex_headers(self.owner_token),
+            timeout=20,
+        )
+        rows = payload.get("MediaContainer", {}).get("Metadata") or []
+        imdb_id = str(media.get("imdb_id") or "").lower()
+        tmdb_id = str(media.get("tmdb_id") or "")
+        for item in rows:
+            key = str(item.get("key") or "")
+            if not (item.get("librarySectionID") or key.startswith("/library/metadata/")):
+                continue
+            if self._matches_plex_identity(item, title, imdb_id, tmdb_id):
+                return True
+        return False
+
+    def _watchlist_target(self, media: dict) -> tuple[dict, dict, int, int]:
+        if media.get("type") != "show":
+            return media, media, 0, 0
+        episodes = [
+            episode for episode in self.episodes(str(media.get("discover_id") or ""))
+            if int(episode.get("season") or 0) > 0
+            and int(episode.get("episode") or 0) > 0
+        ]
+        if not episodes:
+            raise IntegrationError("Plex Discover did not return a regular TV episode")
+        target = dict(episodes[0])
+        target["type"] = "episode"
+        target["parent_title"] = media.get("title") or target.get("parent_title")
+        target["imdb_id"] = target.get("imdb_id") or media.get("imdb_id")
+        target["tmdb_id"] = target.get("tmdb_id") or media.get("tmdb_id")
+        season = int(target.get("season") or 0)
+        episode = int(target.get("episode") or 0)
+        return media, target, season, episode
+
+    def sync_watchlist(self) -> dict:
+        if not self._watchlist_lock.acquire(blocking=False):
+            raise IntegrationError("Plex Watchlist sync is already running")
+        counts = {
+            "found": 0,
+            "queued": 0,
+            "skipped_existing": 0,
+            "skipped_active": 0,
+            "unavailable": 0,
+        }
+        self.store.begin_watchlist_sync()
+        try:
+            settings = self.store.settings()
+            if not settings.get("plex_watchlist_enabled", False):
+                raise IntegrationError("Enable Plex Watchlist automation in Vortexo settings")
+            if not settings.get("torbox_api_key") or not settings.get("stream_manifest_urls"):
+                raise IntegrationError("Connect TorBox and Vortexo Sources before Watchlist sync")
+            limit = max(1, min(int(settings.get("plex_watchlist_max_items", 100)), 1000))
+            items = fetch_plex_watchlist(self.owner_token, limit)
+            counts["found"] = len(items)
+            retry_delay = int(os.environ.get("VORTEXO_WATCHLIST_RETRY_SECONDS", "900"))
+            now = int(time.time())
+            for media in items:
+                identity = self._watchlist_identity(media)
+                record = self.store.upsert_watchlist_item(identity, media)
+                job = self.store.job(str(record.get("job_id") or "")) if record.get("job_id") else None
+                if job and job.get("status") not in TERMINAL_JOB_STATES:
+                    counts["skipped_active"] += 1
+                    continue
+                if job and job.get("status") in {"plex_confirmed", "already_in_plex"}:
+                    self.store.update_watchlist_item(
+                        identity, job["status"], job["detail"], job_id=job["id"]
+                    )
+                    counts["skipped_existing"] += 1
+                    continue
+                if (
+                    int(record.get("next_retry_at") or 0) > now
+                    and record.get("status") in {"failed", "no_cached_release"}
+                ):
+                    counts["skipped_active"] += 1
+                    continue
+                try:
+                    if self._plex_has_media(media):
+                        self.store.update_watchlist_item(
+                            identity,
+                            "already_in_plex",
+                            "Already available in a Plex library",
+                        )
+                        counts["skipped_existing"] += 1
+                        continue
+                    lookup_media, target_media, season, episode = self._watchlist_target(media)
+                    streams, warnings = self._lookup_streams(
+                        lookup_media, season, episode
+                    )
+                    selected = select_automatic_stream(
+                        streams,
+                        str(settings.get("plex_watchlist_profile", "best")),
+                        cached_only=bool(
+                            settings.get("plex_watchlist_cached_only", True)
+                        ),
+                        max_size_gb=float(
+                            settings.get("plex_watchlist_max_size_gb", 80)
+                        ),
+                    )
+                    if not selected:
+                        detail = (
+                            "No cached addable release matched the Watchlist profile"
+                            if settings.get("plex_watchlist_cached_only", True)
+                            else "No addable release matched the Watchlist profile"
+                        )
+                        if warnings:
+                            detail = warnings[0]
+                        self.store.update_watchlist_item(
+                            identity,
+                            "no_cached_release",
+                            detail,
+                            next_retry_at=now + retry_delay,
+                            increment_attempts=True,
+                        )
+                        counts["unavailable"] += 1
+                        continue
+                    stored_stream = self.store.save_streams(
+                        str(target_media.get("discover_id") or media["discover_id"]),
+                        [selected],
+                        ttl=24 * 3600,
+                    )[0]
+                    job, created = self._create_library_job_for_media(
+                        str(target_media.get("discover_id") or media["discover_id"]),
+                        target_media,
+                        stored_stream["id"],
+                        source="plex_watchlist",
+                        retry_failed=True,
+                    )
+                    self.store.update_watchlist_item(
+                        identity,
+                        job.get("status") or "selected",
+                        job.get("detail") or "Queued from Plex Watchlist",
+                        job_id=job.get("id"),
+                        increment_attempts=created,
+                    )
+                    counts["queued"] += int(created)
+                    counts["skipped_active"] += int(not created)
+                except IntegrationError as error:
+                    self.store.update_watchlist_item(
+                        identity,
+                        "failed",
+                        str(error),
+                        next_retry_at=now + retry_delay,
+                        increment_attempts=True,
+                    )
+                    counts["unavailable"] += 1
+            detail = (
+                f"Found {counts['found']}; queued {counts['queued']}; "
+                f"already in Plex {counts['skipped_existing']}; "
+                f"waiting {counts['skipped_active']}; unavailable {counts['unavailable']}"
+            )
+            self.store.complete_watchlist_sync("completed", detail, counts)
+            return {**counts, "status": "completed", "detail": detail}
+        except IntegrationError as error:
+            self.store.complete_watchlist_sync("failed", str(error), counts)
+            raise
+        finally:
+            self._watchlist_lock.release()
 
     def media(self, discover_id: str) -> dict:
         return discover_metadata(discover_id, self.owner_token)
@@ -289,6 +567,23 @@ class VortexoService:
         playback_discover_id = str(
             body.get("episode_discover_id") or media.get("discover_id") or discover_id
         )
+        streams, errors = self._lookup_streams(lookup_media, season, episode)
+        public = self.store.save_streams(media["discover_id"], streams)
+        return {
+            "matched": bool(media.get("imdb_id") or media.get("tmdb_id")),
+            "available": bool(public),
+            "media": media,
+            "playback_discover_id": playback_discover_id,
+            "streams": public,
+            "warnings": errors,
+        }
+
+    def _lookup_streams(
+        self,
+        media: dict,
+        season: int = 0,
+        episode: int = 0,
+    ) -> tuple[list[dict], list[str]]:
         settings = self.store.settings()
         manifests = settings.get("stream_manifest_urls") or []
         if not manifests:
@@ -297,7 +592,7 @@ class VortexoService:
         errors = []
         for manifest_url in manifests:
             try:
-                all_streams.extend(fetch_streams(manifest_url, lookup_media, season, episode))
+                all_streams.extend(fetch_streams(manifest_url, media, season, episode))
             except IntegrationError as error:
                 errors.append(str(error))
         streams = deduplicate_streams(all_streams)
@@ -314,15 +609,7 @@ class VortexoService:
                 except IntegrationError as error:
                     errors.append(str(error))
         streams = deduplicate_streams(streams)
-        public = self.store.save_streams(media["discover_id"], streams)
-        return {
-            "matched": bool(media.get("imdb_id") or media.get("tmdb_id")),
-            "available": bool(public),
-            "media": media,
-            "playback_discover_id": playback_discover_id,
-            "streams": public,
-            "warnings": errors,
-        }
+        return streams, errors
 
     def _resolve_stream_url(self, stream: dict) -> str:
         if stream.get("url"):
@@ -457,16 +744,33 @@ class VortexoService:
     def create_library_job(self, body: dict) -> tuple[dict, bool]:
         stream_id = str(body.get("stream_id") or "")
         discover_id = str(body.get("discover_id") or "")
-        stream = self.store.stream(stream_id)
-        if not stream:
-            raise IntegrationError("Stream selection expired; search again")
-        if not stream.get("can_add"):
-            raise IntegrationError("This stream is playback-only and cannot be added to Plex")
         media = self.media(discover_id)
         if body.get("season"):
             media["season"] = int(body["season"])
         if body.get("episode"):
             media["episode"] = int(body["episode"])
+        return self._create_library_job_for_media(
+            discover_id,
+            media,
+            stream_id,
+            source="manual",
+            retry_failed=False,
+        )
+
+    def _create_library_job_for_media(
+        self,
+        discover_id: str,
+        media: dict,
+        stream_id: str,
+        *,
+        source: str,
+        retry_failed: bool,
+    ) -> tuple[dict, bool]:
+        stream = self.store.stream(stream_id)
+        if not stream:
+            raise IntegrationError("Stream selection expired; search again")
+        if not stream.get("can_add"):
+            raise IntegrationError("This stream is playback-only and cannot be added to Plex")
         dedupe_key = "|".join(
             [
                 discover_id,
@@ -484,19 +788,32 @@ class VortexoService:
             dedupe_key,
             discover_id,
             stream_id,
-            {"media": media, "stream": stream},
+            {"media": media, "stream": stream, "source": source},
         )
+        if not created and retry_failed and job.get("status") == "failed":
+            retried = self.store.retry_job(
+                job["id"], "Retrying release from Plex Watchlist"
+            )
+            if retried:
+                job = retried
+                created = True
         if created:
+            self._start_library_job(job["id"])
+        return job, created
+
+    def _start_library_job(self, job_id: str):
+        with self._job_lock:
+            existing = self._job_threads.get(job_id)
+            if existing and existing.is_alive():
+                return
             thread = threading.Thread(
                 target=self._run_library_job,
-                args=(job["id"],),
-                name=f"vortexo-library-{job['id'][:8]}",
+                args=(job_id,),
+                name=f"vortexo-library-{job_id[:8]}",
                 daemon=True,
             )
-            with self._job_lock:
-                self._job_threads[job["id"]] = thread
-            thread.start()
-        return job, created
+            self._job_threads[job_id] = thread
+        thread.start()
 
     def _run_library_job(self, job_id: str):
         try:
@@ -574,6 +891,20 @@ class VortexoService:
             detail = str(error) if isinstance(error, IntegrationError) else "Library job failed"
             self.store.transition(job_id, "failed", detail)
         finally:
+            final = self.store.job(job_id)
+            if final and final.get("status") in TERMINAL_JOB_STATES:
+                retry_at = (
+                    int(time.time())
+                    + int(os.environ.get("VORTEXO_WATCHLIST_RETRY_SECONDS", "900"))
+                    if final["status"] == "failed"
+                    else 0
+                )
+                self.store.update_watchlist_for_job(
+                    job_id,
+                    final["status"],
+                    final["detail"],
+                    next_retry_at=retry_at,
+                )
             with self._job_lock:
                 self._job_threads.pop(job_id, None)
 
@@ -956,6 +1287,12 @@ class VortexoHandler(BaseHTTPRequestHandler):
                 self._send_json(self.service.update_settings(self._body()))
             else:
                 self._error(HTTPStatus.METHOD_NOT_ALLOWED, "Method not allowed")
+            return
+        if path == "/vortexo/api/watchlist" and self.command == "GET":
+            self._send_json(self.service.watchlist_public())
+            return
+        if path == "/vortexo/api/watchlist/sync" and self.command == "POST":
+            self._send_json(self.service.sync_watchlist())
             return
         match = re.fullmatch(r"/vortexo/api/discover/([^/]+)", path)
         if match and self.command == "GET":

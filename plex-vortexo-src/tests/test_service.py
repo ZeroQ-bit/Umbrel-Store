@@ -29,6 +29,7 @@ class ServiceTests(unittest.TestCase):
                 "VORTEXO_MOVIES_ROOT": self.movies,
                 "VORTEXO_TV_ROOT": self.tv,
                 "VORTEXO_PLEX_PREFERENCES": self.preferences,
+                "VORTEXO_DISABLE_AUTOMATION": "1",
             },
         )
         self.environment.start()
@@ -235,6 +236,112 @@ class ServiceTests(unittest.TestCase):
                     "/downloads/vortexo/TV/Show/Season 02/Show - S02E04 - 4K.mkv",
                 )
             )
+
+    def test_watchlist_sync_queues_one_cached_release_idempotently(self):
+        self.service.store.update_settings(
+            {
+                "torbox_api_key": "private-key",
+                "stream_manifest_urls": ["https://sources.example/manifest.json"],
+                "plex_watchlist_enabled": True,
+                "plex_watchlist_profile": "best",
+                "plex_watchlist_cached_only": True,
+            }
+        )
+        media = {
+            "discover_id": "movie-discover",
+            "type": "movie",
+            "title": "Memento",
+            "year": 2000,
+            "tmdb_id": 77,
+            "imdb_id": "tt0209144",
+        }
+        stream = {
+            "info_hash": "cached-release",
+            "magnet": "magnet:?xt=urn:btih:cached-release",
+            "quality": "4K",
+            "size_gb": 50,
+            "cached": True,
+            "can_add": True,
+            "file_name": "Memento.2000.2160p.mkv",
+        }
+        with mock.patch(
+            "vortexo.service.fetch_plex_watchlist", return_value=[media]
+        ):
+            with mock.patch.object(self.service, "_plex_has_media", return_value=False):
+                with mock.patch.object(
+                    self.service, "_lookup_streams", return_value=([stream], [])
+                ):
+                    with mock.patch.object(self.service, "_start_library_job"):
+                        first = self.service.sync_watchlist()
+                        second = self.service.sync_watchlist()
+        self.assertEqual(first["queued"], 1)
+        self.assertEqual(second["queued"], 0)
+        self.assertEqual(second["skipped_active"], 1)
+        item = self.service.store.watchlist_item("movie:77")
+        self.assertEqual(item["status"], "selected")
+        payload = self.service.store.job_payload(item["job_id"])
+        self.assertEqual(payload["source"], "plex_watchlist")
+        self.assertNotIn("private-key", str(self.service.watchlist_public()))
+
+    def test_watchlist_skips_titles_already_in_plex(self):
+        self.service.store.update_settings(
+            {
+                "torbox_api_key": "private-key",
+                "stream_manifest_urls": ["https://sources.example/manifest.json"],
+                "plex_watchlist_enabled": True,
+            }
+        )
+        media = {
+            "discover_id": "movie-discover",
+            "type": "movie",
+            "title": "Memento",
+            "tmdb_id": 77,
+            "imdb_id": "tt0209144",
+        }
+        with mock.patch(
+            "vortexo.service.fetch_plex_watchlist", return_value=[media]
+        ):
+            with mock.patch.object(self.service, "_plex_has_media", return_value=True):
+                with mock.patch.object(self.service, "_lookup_streams") as lookup:
+                    result = self.service.sync_watchlist()
+        self.assertEqual(result["skipped_existing"], 1)
+        self.assertEqual(result["queued"], 0)
+        lookup.assert_not_called()
+        self.assertEqual(
+            self.service.store.watchlist_item("movie:77")["status"],
+            "already_in_plex",
+        )
+
+    def test_watchlist_show_safely_targets_first_regular_episode(self):
+        show = {
+            "discover_id": "show-discover",
+            "type": "show",
+            "title": "Severance",
+            "tmdb_id": 95396,
+            "imdb_id": "tt11280740",
+        }
+        episodes = [
+            {
+                "discover_id": "special",
+                "type": "episode",
+                "title": "Special",
+                "season": 0,
+                "episode": 1,
+            },
+            {
+                "discover_id": "episode-one",
+                "type": "episode",
+                "title": "Good News About Hell",
+                "season": 1,
+                "episode": 1,
+            },
+        ]
+        with mock.patch.object(self.service, "episodes", return_value=episodes):
+            lookup, target, season, episode = self.service._watchlist_target(show)
+        self.assertEqual(lookup["discover_id"], "show-discover")
+        self.assertEqual(target["discover_id"], "episode-one")
+        self.assertEqual(target["parent_title"], "Severance")
+        self.assertEqual((season, episode), (1, 1))
 
 
 if __name__ == "__main__":

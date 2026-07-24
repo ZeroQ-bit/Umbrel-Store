@@ -9,11 +9,13 @@ from vortexo.integrations import (
     choose_video_file,
     deduplicate_streams,
     external_ids,
+    fetch_plex_watchlist,
     fetch_streams,
     json_request,
     normalize_discover_id,
     normalize_media,
     normalize_stream,
+    select_automatic_stream,
 )
 
 
@@ -45,6 +47,53 @@ class DiscoverIdentityTests(unittest.TestCase):
         self.assertEqual(media["discover_id"], "5d776d1796b655001fe3f324")
         self.assertEqual((media["season"], media["episode"]), (2, 4))
         self.assertEqual(media["grandparent_rating_key"], "show-discover-id")
+
+    def test_plex_watchlist_paginates_and_preserves_discover_identity(self):
+        responses = [
+            {
+                "MediaContainer": {
+                    "totalSize": 2,
+                    "Metadata": [
+                        {
+                            "ratingKey": "movie-discover",
+                            "type": "movie",
+                            "title": "Memento",
+                            "year": 2000,
+                            "Guid": [
+                                {"id": "imdb://tt0209144"},
+                                {"id": "tmdb://77"},
+                            ],
+                        }
+                    ],
+                }
+            },
+            {
+                "MediaContainer": {
+                    "totalSize": 2,
+                    "Metadata": [
+                        {
+                            "ratingKey": "show-discover",
+                            "type": "show",
+                            "title": "Severance",
+                            "Guid": [{"id": "tmdb://95396"}],
+                        }
+                    ],
+                }
+            },
+        ]
+        with mock.patch(
+            "vortexo.integrations.json_request", side_effect=responses
+        ) as request:
+            items = fetch_plex_watchlist("owner-token", 2)
+        self.assertEqual(
+            [(item["discover_id"], item["type"]) for item in items],
+            [("movie-discover", "movie"), ("show-discover", "show")],
+        )
+        self.assertEqual(request.call_count, 2)
+        self.assertEqual(
+            request.call_args_list[0].kwargs["headers"]["X-Plex-Token"],
+            "owner-token",
+        )
 
 
 class StreamNormalizationTests(unittest.TestCase):
@@ -134,6 +183,49 @@ class StreamNormalizationTests(unittest.TestCase):
             ]
         }
         self.assertEqual(choose_video_file(torrent, 1, 2)["file_id"], 2)
+
+    def test_automatic_stream_selection_is_cached_profile_and_size_aware(self):
+        rows = [
+            {
+                "info_hash": "4k-large",
+                "quality": "4K",
+                "size_gb": 120,
+                "cached": True,
+                "can_add": True,
+            },
+            {
+                "info_hash": "4k-fit",
+                "quality": "4K",
+                "size_gb": 60,
+                "cached": True,
+                "can_add": True,
+            },
+            {
+                "info_hash": "1080p-fit",
+                "quality": "1080p",
+                "size_gb": 20,
+                "cached": True,
+                "can_add": True,
+            },
+            {
+                "info_hash": "uncached",
+                "quality": "4K",
+                "size_gb": 40,
+                "cached": False,
+                "can_add": True,
+            },
+        ]
+        self.assertEqual(
+            select_automatic_stream(rows, "4k", max_size_gb=80)["info_hash"],
+            "4k-fit",
+        )
+        self.assertEqual(
+            select_automatic_stream(rows, "1080p", max_size_gb=80)["info_hash"],
+            "1080p-fit",
+        )
+        self.assertIsNone(
+            select_automatic_stream([rows[-1]], "best", cached_only=True)
+        )
 
     def test_manifest_lookup_uses_movie_and_series_stremio_routes(self):
         calls = []
