@@ -11,6 +11,8 @@ library organization, and Plex refresh into one visible pipeline.
   codecs, containers, file sizes, and multi-version visibility
 - TMDb/IMDb matching that marks Discover results already in Plex
 - Explicit 1080p upgrades for lower-quality Plex items
+- Optional series completion that fills missing aired episodes for shows already
+  present in Plex while ignoring future episodes
 - Persistent SQLite request queue and event history
 - Direct MDBList and Trakt list imports that skip titles already in Plex
 - Existing TorBox/Real-Debrid acquisition engine reused as an isolated worker
@@ -51,5 +53,7 @@ python3 -m unittest discover -s tests -v
 Automatic lists use import-only behavior. Removing a title from MDBList or
 Trakt never deletes Plex media, debrid torrents, or library links, and items
 already present in Plex are skipped. Plex refresh failures preserve the last
-successful inventory. Persistent source-media caching remains disabled; only
-Orbit state, logs, and library symlinks are stored locally.
+successful inventory. Series completion is opt-in and has a configurable daily
+limit; it only monitors shows with at least one episode already in Plex.
+Persistent source-media caching remains disabled; only Orbit state, logs, and
+library symlinks are stored locally.

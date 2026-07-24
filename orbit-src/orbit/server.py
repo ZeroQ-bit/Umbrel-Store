@@ -23,7 +23,7 @@ STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 PORT = int(os.environ.get("ORBIT_PORT", "8080"))
 MOUNT_API = os.environ.get("ORBIT_MOUNT_API", "http://mount:8080")
 LEGACY_CONFIG = os.environ.get("PD_CONFIG_DIR", "/config")
-VERSION = "0.3.2"
+VERSION = "0.4.0"
 SECRET_KEYS = {
     "tmdb_api_key", "mdblist_api_key", "trakt_client_id", "torbox_api_key",
     "webdav_password", "realdebrid_api_key", "plex_token",
@@ -280,7 +280,7 @@ class Handler(BaseHTTPRequestHandler):
                 "tmdb_api_key", "mdblist_api_key", "trakt_client_id", "list_poll_minutes",
                 "debrid_mode", "torbox_api_key", "realdebrid_api_key", "webdav_url",
                 "webdav_username", "webdav_password", "plex_url", "plex_token", "plex_username",
-                "plex_sections",
+                "plex_sections", "complete_aired_series", "series_completion_daily_limit",
             }
             values = {key: value for key, value in body.items() if key in allowed}
             store.set_settings(values, SECRET_KEYS)

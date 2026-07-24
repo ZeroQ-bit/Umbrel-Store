@@ -9,6 +9,7 @@ import subprocess
 import threading
 import time
 import re
+from datetime import datetime, timezone
 
 from .integrations import IntegrationError, fetch_list
 from .plex import scan_plex_library
@@ -151,7 +152,40 @@ class Coordinator:
                 settings["plex_url"], settings["plex_token"], section_ids
             )
             self.store.replace_plex_library(items)
-            return {"items": len(items), "status": self.store.plex_library_status()}
+            completion = self.queue_series_completions(settings)
+            return {
+                "items": len(items),
+                "status": self.store.plex_library_status(),
+                "series_completion": completion,
+            }
         except IntegrationError as error:
             self.store.fail_plex_library_sync(str(error))
             raise
+
+    def queue_series_completions(self, settings: dict | None = None) -> dict:
+        settings = settings or self.store.get_settings(reveal_secrets=True)
+        enabled = str(settings.get("complete_aired_series", "false")).lower() in {
+            "1", "true", "yes", "on",
+        }
+        if not enabled:
+            return {"enabled": False, "queued": 0, "daily_limit": 0}
+        try:
+            daily_limit = max(
+                1, min(int(settings.get("series_completion_daily_limit", "25")), 250)
+            )
+        except (TypeError, ValueError):
+            daily_limit = 25
+        run_key = datetime.now(timezone.utc).date().isoformat()
+        remaining = max(0, daily_limit - self.store.series_completion_count(run_key))
+        queued = 0
+        for item in self.store.list_series_completion_candidates():
+            if queued >= remaining:
+                break
+            _, created = self.store.queue_series_completion(item, run_key)
+            queued += int(created)
+        return {
+            "enabled": True,
+            "queued": queued,
+            "daily_limit": daily_limit,
+            "remaining_today": max(0, remaining - queued),
+        }

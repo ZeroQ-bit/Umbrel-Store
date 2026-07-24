@@ -171,6 +171,89 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(result["added"], 1)
         self.assertEqual(self.store.list_requests()[0]["title"], "Arrival")
 
+    def test_series_completion_only_queues_owned_identified_shows(self):
+        self.store.replace_plex_library([
+            {
+                "plex_rating_key": "201", "section_id": "5", "media_type": "show",
+                "title": "Foundation", "year": 2021, "tmdb_id": 93740,
+                "quality": "1080p", "versions": [], "episode_count": 10,
+            },
+            {
+                "plex_rating_key": "202", "section_id": "5", "media_type": "show",
+                "title": "Not Started", "year": 2026, "tmdb_id": 200002,
+                "quality": "Quality unavailable", "versions": [], "episode_count": 0,
+            },
+            {
+                "plex_rating_key": "203", "section_id": "4", "media_type": "movie",
+                "title": "Dune", "year": 2021, "tmdb_id": 438631,
+                "quality": "1080p", "versions": [],
+            },
+            {
+                "plex_rating_key": "204", "section_id": "5", "media_type": "show",
+                "title": "Unidentified", "year": 2020,
+                "quality": "720p", "versions": [], "episode_count": 3,
+            },
+        ])
+        candidates = self.store.list_series_completion_candidates()
+        self.assertEqual([item["title"] for item in candidates], ["Foundation"])
+        request, created = self.store.queue_series_completion(candidates[0], "2026-07-24")
+        self.assertTrue(created)
+        self.assertEqual(request["source"], "series-monitor")
+        self.assertEqual(request["source_ref"], "2026-07-24")
+        self.assertEqual(request["status"], "queued")
+
+    def test_series_completion_is_idempotent_per_day_and_requeues_later(self):
+        item = {
+            "title": "Foundation", "year": 2021, "tmdb_id": 93740,
+            "thumb": "/library/metadata/201/thumb/1",
+        }
+        first, created = self.store.queue_series_completion(item, "2026-07-24")
+        self.assertTrue(created)
+        duplicate, duplicated = self.store.queue_series_completion(item, "2026-07-24")
+        self.assertFalse(duplicated)
+        self.assertEqual(first["id"], duplicate["id"])
+        self.store.transition(first["id"], "ready", "Series is caught up")
+        later, requeued = self.store.queue_series_completion(item, "2026-07-25")
+        self.assertTrue(requeued)
+        self.assertEqual(later["id"], first["id"])
+        self.assertEqual(later["status"], "queued")
+        self.assertEqual(later["source_ref"], "2026-07-25")
+
+    def test_series_completion_respects_active_requests_and_daily_limit(self):
+        self.store.replace_plex_library([
+            {
+                "plex_rating_key": str(key), "section_id": "5", "media_type": "show",
+                "title": title, "year": 2021, "tmdb_id": tmdb_id,
+                "quality": "1080p", "versions": [], "episode_count": 2,
+            }
+            for key, title, tmdb_id in (
+                (301, "Foundation", 93740),
+                (302, "Silo", 125988),
+            )
+        ])
+        active, _ = self.store.add_request({
+            "media_type": "show", "title": "Foundation", "tmdb_id": 93740,
+        })
+        coordinator = Coordinator(self.store, self.temp.name)
+        with patch("orbit.worker.datetime") as clock:
+            clock.now.return_value = __import__("datetime").datetime(
+                2026, 7, 24, tzinfo=__import__("datetime").timezone.utc
+            )
+            first = coordinator.queue_series_completions({
+                "complete_aired_series": "true",
+                "series_completion_daily_limit": "1",
+            })
+            second = coordinator.queue_series_completions({
+                "complete_aired_series": "true",
+                "series_completion_daily_limit": "1",
+            })
+        self.assertEqual(first["queued"], 1)
+        self.assertEqual(second["queued"], 0)
+        requests = {item["title"]: item for item in self.store.list_requests()}
+        self.assertEqual(requests["Foundation"]["id"], active["id"])
+        self.assertEqual(requests["Foundation"]["source"], "manual")
+        self.assertEqual(requests["Silo"]["source"], "series-monitor")
+
 
 if __name__ == "__main__":
     unittest.main()

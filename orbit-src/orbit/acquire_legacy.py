@@ -78,6 +78,14 @@ def main() -> int:
         print(json.dumps({"ok": False, "detail": "The configured media library could not be read"}))
         return 5
 
+    if job.get("source") == "series-monitor" and item.complete(library):
+        print(json.dumps({
+            "ok": True,
+            "detail": "Series is caught up; future unaired episodes were ignored",
+            "paths": [],
+        }))
+        return 0
+
     item.download(library=library)
     releases = getattr(item, "downloaded_releases", [])
     if not releases:

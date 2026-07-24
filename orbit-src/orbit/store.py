@@ -187,6 +187,98 @@ class Store:
             row = db.execute("SELECT * FROM requests WHERE id=?", (request_id,)).fetchone()
             return dict(row), True
 
+    def series_completion_count(self, run_key: str) -> int:
+        with self.connection() as db:
+            return int(db.execute(
+                "SELECT COUNT(*) FROM requests WHERE source='series-monitor' AND source_ref=?",
+                (run_key,),
+            ).fetchone()[0])
+
+    def list_series_completion_candidates(self, limit: int = 1000) -> list[dict]:
+        """Return owned series, oldest monitor check first."""
+        with self.connection() as db:
+            rows = db.execute(
+                """SELECT p.*,
+                          (
+                            SELECT r.updated_at FROM requests r
+                            WHERE r.media_key = CASE
+                              WHEN p.tmdb_id IS NOT NULL
+                                THEN 'tmdb:show:' || p.tmdb_id
+                              ELSE 'imdb:show:' || p.imdb_id
+                            END
+                            ORDER BY r.id DESC LIMIT 1
+                          ) AS request_updated_at
+                   FROM plex_library p
+                   WHERE p.media_type='show' AND p.episode_count > 0
+                     AND (p.tmdb_id IS NOT NULL OR p.imdb_id != '')
+                   ORDER BY request_updated_at IS NOT NULL, request_updated_at,
+                            p.title COLLATE NOCASE
+                   LIMIT ?""",
+                (max(1, min(limit, 5000)),),
+            ).fetchall()
+        return [self._decode_library_row(row) for row in rows]
+
+    def queue_series_completion(self, item: dict, run_key: str) -> tuple[dict, bool]:
+        """Queue or requeue one owned show for an aired-episode check."""
+        tmdb_id = item.get("tmdb_id")
+        imdb_id = item.get("imdb_id") or ""
+        media_key = f"tmdb:show:{tmdb_id}" if tmdb_id else f"imdb:show:{imdb_id}"
+        now = utc_now()
+        active_states = {"queued", "searching", "library_pending"}
+        with self._lock, self.connection() as db:
+            existing = db.execute(
+                "SELECT * FROM requests WHERE media_key=? ORDER BY id DESC LIMIT 1",
+                (media_key,),
+            ).fetchone()
+            if existing:
+                if existing["status"] in active_states:
+                    return dict(existing), False
+                if existing["source"] == "series-monitor" and existing["source_ref"] == run_key:
+                    return dict(existing), False
+                db.execute(
+                    """UPDATE requests
+                       SET title=?, year=?, tmdb_id=?, imdb_id=?, poster_path=?,
+                           source='series-monitor', source_ref=?, status='queued',
+                           status_detail='', profile='best', updated_at=?
+                       WHERE id=?""",
+                    (
+                        item.get("title") or "Unknown", item.get("year"), tmdb_id,
+                        imdb_id, item.get("thumb") or item.get("poster_path") or "",
+                        run_key, now, existing["id"],
+                    ),
+                )
+                db.execute(
+                    """INSERT INTO request_events(request_id, state, detail, created_at)
+                       VALUES (?, 'queued', 'Checking for missing aired episodes', ?)""",
+                    (existing["id"], now),
+                )
+                row = db.execute(
+                    "SELECT * FROM requests WHERE id=?", (existing["id"],)
+                ).fetchone()
+                return dict(row), True
+            cursor = db.execute(
+                """INSERT INTO requests
+                   (media_key, media_type, title, year, tmdb_id, imdb_id,
+                    poster_path, overview, source, source_ref, profile,
+                    created_at, updated_at)
+                   VALUES (?, 'show', ?, ?, ?, ?, ?, '', 'series-monitor', ?,
+                           'best', ?, ?)""",
+                (
+                    media_key, item.get("title") or "Unknown", item.get("year"),
+                    tmdb_id, imdb_id, item.get("thumb") or item.get("poster_path") or "",
+                    run_key, now, now,
+                ),
+            )
+            db.execute(
+                """INSERT INTO request_events(request_id, state, detail, created_at)
+                   VALUES (?, 'queued', 'Checking for missing aired episodes', ?)""",
+                (cursor.lastrowid, now),
+            )
+            row = db.execute(
+                "SELECT * FROM requests WHERE id=?", (cursor.lastrowid,)
+            ).fetchone()
+            return dict(row), True
+
     def list_requests(self, limit: int = 100) -> list[dict]:
         with self.connection() as db:
             rows = db.execute(
@@ -465,7 +557,8 @@ class Store:
     def export_worker_request(self, request: dict, path: str):
         """Atomically expose one request to the acquisition worker."""
         payload = {key: request.get(key) for key in (
-            "id", "media_type", "title", "year", "tmdb_id", "imdb_id", "profile"
+            "id", "media_type", "title", "year", "tmdb_id", "imdb_id", "profile",
+            "source", "source_ref",
         )}
         os.makedirs(os.path.dirname(path), exist_ok=True)
         temporary = path + ".tmp"
