@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-orbit
 category: media
 name: Orbit
-version: "0.4.2"
+version: "0.5.0"
 tagline: Search, automate, mount, and deliver debrid media to Plex
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Umbrel-Store/master/zeroq-orbit/icon.png
 description: >-
@@ -20,9 +20,10 @@ description: >-
   from the debrid provider and persistent VFS media caching remains disabled.
   Orbit stores only its database, configuration, logs, and library symlinks.
 
-  The Plex Library view imports existing movies and shows with their current
-  resolution, HDR format, codecs, containers, sizes, and available versions.
-  Discover and automatic lists avoid duplicate requests for titles already in Plex.
+  The Plex Library view imports existing movies, series, seasons, and episodes
+  with their current resolution, HDR format, codecs, containers, sizes, media
+  versions, and video, audio, and subtitle tracks. Discover and automatic lists
+  avoid duplicate requests for titles already in Plex.
 
 
   Automatic lists use safe import-only behavior: removing a title from a list
@@ -40,11 +41,11 @@ defaultPassword: ""
 torOnly: false
 permissions: []
 releaseNotes: >-
-  Adds optional aired-series completion. When Plex already has at least one
-  episode of a series, Orbit can check for and acquire the remaining episodes
-  that have aired while ignoring future episodes. A configurable daily limit
-  rotates safely through larger libraries and avoids duplicate checks. This
-  update also fixes acquisition-worker startup and makes legacy settings
-  migrations non-interactive so background series checks run unattended.
+  Adds full series, season, and episode drill-down to Library, including current
+  video, audio, and subtitle stream details. Replacement searches can target a
+  movie, an entire series, one season, or one episode with Best, 1080p, or 4K
+  quality while the existing Plex stream remains available. Settings now has
+  separate Discovery, Debrid, Plex, Scrapers, and Series tabs, with controls for
+  Torrentio, Prowlarr, Jackett, Orionoid, Nyaa, and 1337x.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store
