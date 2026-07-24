@@ -31,6 +31,7 @@ class Coordinator:
         self.last_link_repair_poll = 0.0
         self.last_plex_refresh_request = 0.0
         self.pending_plex_refresh = False
+        self.link_repair_lock = threading.Lock()
         self.last_link_repair = {
             "status": "never",
             "checked": 0,
@@ -229,6 +230,18 @@ class Coordinator:
 
     def repair_plex_streams(self, settings: dict | None = None) -> dict:
         """Repair broken links, queue missing streams, then clear stale Plex flags."""
+        if not self.link_repair_lock.acquire(blocking=False):
+            return {
+                **self.last_link_repair,
+                "status": "running",
+                "error": "A Plex stream protection check is already running",
+            }
+        try:
+            return self._repair_plex_streams(settings)
+        finally:
+            self.link_repair_lock.release()
+
+    def _repair_plex_streams(self, settings: dict | None = None) -> dict:
         settings = settings or self.store.get_settings(reveal_secrets=True)
         if not self.mount_is_healthy():
             self.last_link_repair = {
@@ -247,14 +260,8 @@ class Coordinator:
             "movie": os.environ.get("ORBIT_MOVIES_DIR", "/downloads/vortexo/Movies"),
             "show": os.environ.get("ORBIT_TV_DIR", "/downloads/vortexo/TV"),
         }
-        repaired = repair_broken_symlinks(
-            settings.get("torbox_api_key", ""),
-            os.environ.get("PD_DOWNLOADS_DIR", "/downloads"),
-            roots,
-            max_repairs=max_per_run * 10,
-        )
-        queued = 0
-        stale_sections: set[str] = set()
+        inventory_scopes = []
+        unavailable_paths: set[str] = set()
         for item in self.store.plex_repair_inventory():
             scopes = []
             if item["media_type"] == "movie":
@@ -268,33 +275,48 @@ class Coordinator:
                             episode.get("episode_number"),
                             self._version_paths(episode.get("versions", [])),
                         ))
-            for scope, season_number, episode_number, paths in scopes:
-                if not paths:
-                    continue
-                path_states = [(path, os.path.exists(path), plex_available) for path, plex_available in paths]
-                if any(exists for _path, exists, _available in path_states):
-                    if any(not available for _path, _exists, available in path_states):
-                        stale_sections.add(str(item["section_id"]))
-                    continue
-                if queued >= max_per_run:
-                    continue
-                if not (item.get("tmdb_id") or item.get("imdb_id")):
-                    continue
-                label = (
-                    "Restoring an unavailable movie stream"
-                    if scope == "movie"
-                    else f"Restoring unavailable S{int(season_number):02d}E{int(episode_number):02d}"
-                )
-                _request, created = self.store.queue_library_replacement(
-                    item,
-                    scope,
-                    season_number,
-                    episode_number,
-                    "best",
-                    minimum_retry_seconds=21600,
-                    detail_override=label,
-                )
-                queued += int(created)
+            for scope in scopes:
+                paths = scope[3]
+                if paths and not any(available for _path, available in paths):
+                    unavailable_paths.update(path for path, _available in paths)
+                    inventory_scopes.append((item, *scope))
+        repaired = repair_broken_symlinks(
+            settings.get("torbox_api_key", ""),
+            os.environ.get("PD_DOWNLOADS_DIR", "/downloads"),
+            roots,
+            max_repairs=max_per_run * 10,
+            candidate_links=unavailable_paths,
+        )
+        queued = 0
+        stale_sections: set[str] = set()
+        for item, scope, season_number, episode_number, paths in inventory_scopes:
+            path_states = [
+                (path, os.path.exists(path), plex_available)
+                for path, plex_available in paths
+            ]
+            if any(exists for _path, exists, _available in path_states):
+                if any(not available for _path, _exists, available in path_states):
+                    stale_sections.add(str(item["section_id"]))
+                continue
+            if queued >= max_per_run:
+                continue
+            if not (item.get("tmdb_id") or item.get("imdb_id")):
+                continue
+            label = (
+                "Restoring an unavailable movie stream"
+                if scope == "movie"
+                else f"Restoring unavailable S{int(season_number):02d}E{int(episode_number):02d}"
+            )
+            _request, created = self.store.queue_library_replacement(
+                item,
+                scope,
+                season_number,
+                episode_number,
+                "best",
+                minimum_retry_seconds=21600,
+                detail_override=label,
+            )
+            queued += int(created)
         if repaired["repaired"]:
             stale_sections.update(self._section_ids(settings))
         refreshed = []

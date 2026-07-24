@@ -40,6 +40,7 @@ class LinkRepairTests(unittest.TestCase):
                     "token",
                     mount,
                     {"movie": movies, "show": television},
+                    candidate_links={link},
                 )
 
             self.assertEqual(result["repaired"], 1)

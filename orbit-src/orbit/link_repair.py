@@ -156,6 +156,7 @@ def repair_broken_symlinks(
     mount_dir: str,
     library_dirs: dict[str, str],
     max_repairs: int = 100,
+    candidate_links: set[str] | None = None,
 ) -> dict:
     """Retarget broken links to a matching completed TorBox torrent.
 
@@ -181,15 +182,42 @@ def repair_broken_symlinks(
     for media_kind, library_root in library_dirs.items():
         if not library_root or not os.path.isdir(library_root):
             continue
-        try:
-            folders = sorted(os.listdir(library_root))
-        except OSError:
-            continue
-        for folder_name in folders:
-            folder = os.path.join(library_root, folder_name)
-            if not os.path.isdir(folder):
+        if candidate_links is None:
+            try:
+                folders = [
+                    os.path.join(library_root, folder_name)
+                    for folder_name in sorted(os.listdir(library_root))
+                    if os.path.isdir(os.path.join(library_root, folder_name))
+                ]
+            except OSError:
                 continue
-            broken = _broken_symlinks(folder)
+        else:
+            folders = []
+            seen_folders = set()
+            root_path = os.path.abspath(library_root)
+            for link_path in candidate_links:
+                path = os.path.abspath(link_path)
+                try:
+                    relative = os.path.relpath(path, root_path)
+                except ValueError:
+                    continue
+                if relative.startswith(".." + os.sep) or relative == "..":
+                    continue
+                folder_name = relative.split(os.sep, 1)[0]
+                folder = os.path.join(root_path, folder_name)
+                if folder not in seen_folders and os.path.isdir(folder):
+                    seen_folders.add(folder)
+                    folders.append(folder)
+        for folder in folders:
+            folder_name = os.path.basename(folder)
+            if candidate_links is None:
+                broken = _broken_symlinks(folder)
+            else:
+                broken = [
+                    path for path in candidate_links
+                    if path == folder or path.startswith(folder.rstrip(os.sep) + os.sep)
+                    if os.path.islink(path) and not os.path.exists(path)
+                ]
             checked += len(broken)
             if not broken:
                 continue
