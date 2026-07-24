@@ -29,3 +29,64 @@ services:
       - ${APP_DATA_DIR}/data/config:/config
       - ${APP_DATA_DIR}/data/transcode:/transcode
       - ${UMBREL_ROOT}/data/zeroq-media:/downloads:rslave,ro
+
+  gateway:
+    # The store updater adds the immutable digest after the first authorized
+    # GHCR publication.
+    image: ghcr.io/zeroq-bit/plex-vortexo:main
+    restart: on-failure
+    stop_grace_period: 30s
+    network_mode: host
+    depends_on:
+      - server
+    environment:
+      - TZ=Etc/UTC
+      - VORTEXO_ROLE=gateway
+      - VORTEXO_DATA_DIR=/data/vortexo
+      - VORTEXO_API_PORT=32403
+      - VORTEXO_PLEX_URL=http://127.0.0.1:32400
+      - VORTEXO_PLEX_PREFERENCES=/plex-config/Library/Application Support/Plex Media Server/Preferences.xml
+      - VORTEXO_MOUNT_API=http://127.0.0.1:32402
+      - VORTEXO_SOURCE_ROOT=/downloads/.vortexo-source
+      - VORTEXO_MOVIES_ROOT=/downloads/vortexo/Movies
+      - VORTEXO_TV_ROOT=/downloads/vortexo/TV
+    volumes:
+      - ${APP_DATA_DIR}/data/vortexo:/data/vortexo
+      - ${APP_DATA_DIR}/data/config:/plex-config:ro
+      - ${UMBREL_ROOT}/data/zeroq-media:/downloads:rslave,ro
+      - ${UMBREL_ROOT}/data/zeroq-media/vortexo:/downloads/vortexo
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:32401/vortexo/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  mount:
+    # Kept on the same image/tag as gateway; both references are digest-pinned
+    # together by the store updater.
+    image: ghcr.io/zeroq-bit/plex-vortexo:main
+    restart: on-failure
+    stop_grace_period: 1m
+    network_mode: host
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - /dev/fuse:/dev/fuse
+    security_opt:
+      - apparmor:unconfined
+    environment:
+      - TZ=Etc/UTC
+      - VORTEXO_ROLE=mount
+      - VORTEXO_DATA_DIR=/data/vortexo
+      - VORTEXO_MOUNTPOINT=/downloads/.vortexo-source
+      - VORTEXO_HOST_MOUNT_PATH=${UMBREL_ROOT}/data/zeroq-media/.vortexo-source
+    volumes:
+      - ${APP_DATA_DIR}/data/vortexo:/data/vortexo
+      - ${UMBREL_ROOT}/data/zeroq-media:/downloads:rshared
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:32402/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s

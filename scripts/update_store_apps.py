@@ -228,19 +228,18 @@ def replace_manifest_version(text: str, new_version: str) -> tuple[str, bool]:
 
 def replace_image_reference(text: str, *, repository: str, tag: str, digest: str) -> tuple[str, bool]:
     pattern = re.compile(
-        rf'(^\s*image:\s*{re.escape(repository)}:)([^@\s]+)(@sha256:[0-9a-f]{{64}})',
+        rf'(^\s*image:\s*{re.escape(repository)}:)([^@\s]+)(?:@sha256:[0-9a-f]{{64}})?',
         re.MULTILINE,
     )
-    match = pattern.search(text)
-    if not match:
+    matches = list(pattern.finditer(text))
+    if not matches:
         raise RuntimeError(f"Could not find image reference for {repository}")
 
-    current_ref = f"{repository}:{match.group(2)}{match.group(3)}"
     desired_ref = f"{repository}:{tag}@{digest}"
-    if current_ref == desired_ref:
+    if all(match.group(0).strip() == f"image: {desired_ref}" for match in matches):
         return text, False
 
-    replaced = pattern.sub(lambda m: f"{m.group(1)}{tag}@{digest}", text, count=1)
+    replaced = pattern.sub(lambda match: f"{match.group(1)}{tag}@{digest}", text)
     return replaced, True
 
 

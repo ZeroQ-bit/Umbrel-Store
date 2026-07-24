@@ -2,8 +2,8 @@ manifestVersion: 1.1
 id: zeroq-plex
 category: media
 name: Plex (Vortexo)
-version: "1.43.3.10828.8"
-tagline: Stream Movies & TV Shows
+version: "1.43.3.10828.9"
+tagline: Plex Discover with private TorBox streaming
 icon: https://avatars.githubusercontent.com/u/11744877?v=4
 description: >-
   Stream movies and TV shows, plus 300+ channels of live TV, instantly, without a subscription. Watch live TV and movies anywhere, from any device, with Plex.
@@ -12,9 +12,13 @@ description: >-
   Plex uses a server to house your media library and player apps to playback the media. Add, access, and share all the entertainment that matters to you, on almost any device.
 
 
-  This ZeroQ package is intended to replace the stock Umbrel Plex app when you want direct integration with Orbit's private, Files-invisible library.
+  This ZeroQ package adds a private Vortexo gateway to Plex Web. Open Discover
+  from the Umbrel tile to search configured Vortexo Sources, play cached TorBox
+  releases, or add a chosen version to Plex without changing native Plex clients.
 
-  Install and configure Orbit first so `/downloads/.vortexo-source` is owned by Orbit's integrated debrid mount instead of the Vortexo Server container.
+  Plex (Vortexo) owns its TorBox WebDAV mount and does not depend on Orbit.
+  TorBox credentials stay server-side and only the authenticated Plex owner can
+  configure or use Vortexo actions.
 
   Set Plex libraries to:
   - `/downloads/vortexo/Movies`
@@ -24,11 +28,9 @@ description: >-
   ⚠️ Because Plex still runs in host network mode on port 32400, stop the stock Plex app before installing this package. This package does not import stock Plex data automatically; migrate that data separately before switching, and keep the stopped stock app as a rollback until the new package is verified.
 developer: Plex
 website: https://www.plex.tv/
-dependencies:
-  - zeroq-orbit
 repo: ""
 support: https://www.plex.tv/
-port: 32400
+port: 32401
 gallery:
   - 1.jpg
   - 2.jpg
@@ -40,13 +42,13 @@ torOnly: false
 permissions:
   - GPU
 releaseNotes: >-
-  Replaces the legacy Debrid Mount dependency with Orbit. Plex continues to read
-  Orbit's private shared filesystem through a read-only slave mount,
-  preventing Umbrel Files from indexing remote media while preserving the Plex
-  library paths `/downloads/vortexo/Movies` and `/downloads/vortexo/TV`.
+  Adds the self-contained Vortexo companion on port 32401. Plex Discover pages
+  now receive an owner-only TorBox provider card with stream selection,
+  in-page playback, resume tracking, and an idempotent Add to Plex pipeline.
 
 
-  TorBox source media remains remote. Plex metadata and temporary transcodes
-  continue to use Plex's normal app-data directories.
+  Stock Plex remains available on port 32400 for native clients and rollback.
+  The new mount supervisor refuses to start while Orbit or any other process
+  owns `/downloads/.vortexo-source`; it never detaches an unknown live mount.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store/pull/2
