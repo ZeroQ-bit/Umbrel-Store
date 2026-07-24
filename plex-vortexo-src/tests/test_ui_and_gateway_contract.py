@@ -51,7 +51,11 @@ class UIContractTests(unittest.TestCase):
         for runtime in ("client", "fastcgi", "proxy", "scgi", "uwsgi"):
             self.assertIn(f"/tmp/nginx/{runtime}", self.nginx)
             self.assertIn(f"/tmp/nginx/{runtime}", self.entrypoint)
-        self.assertIn("nginx -e /dev/stderr", self.entrypoint)
+        self.assertIn("error_log /tmp/nginx/error.log", self.nginx)
+        self.assertIn("nginx -e /tmp/nginx/error.log", self.entrypoint)
+        self.assertIn("tail -n 0 -f /tmp/nginx/error.log", self.entrypoint)
+        self.assertNotIn("/dev/stderr", self.nginx)
+        self.assertNotIn("/dev/stderr", self.entrypoint)
         self.assertNotIn("sub_filter_types text/html", self.nginx)
 
     def test_store_updater_digest_pins_both_companion_roles(self):
