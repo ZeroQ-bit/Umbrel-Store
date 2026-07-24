@@ -5,7 +5,9 @@ APP_DIR="$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")"
 APP_DATA_DIR="${APP_DIR}/data"
 TARGET_CONFIG_DIR="${APP_DATA_DIR}/config"
 TARGET_TRANSCODE_DIR="${APP_DATA_DIR}/transcode"
+VORTEXO_DATA_DIR="${APP_DATA_DIR}/vortexo"
 DOWNLOADS_DIR="${UMBREL_ROOT}/data/zeroq-media"
+VORTEXO_SOURCE_DIR="${DOWNLOADS_DIR}/.vortexo-source"
 VORTEXO_LIBRARY_DIR="${DOWNLOADS_DIR}/vortexo"
 
 if command -v sysctl >/dev/null 2>&1; then
@@ -14,8 +16,8 @@ if command -v sysctl >/dev/null 2>&1; then
   sysctl -w fs.inotify.max_queued_events=32768 >/dev/null 2>&1 || true
 fi
 
-mkdir -p "${TARGET_CONFIG_DIR}" "${TARGET_TRANSCODE_DIR}" \
-  "${DOWNLOADS_DIR}/.vortexo-source" "${VORTEXO_LIBRARY_DIR}/Movies" "${VORTEXO_LIBRARY_DIR}/TV"
+mkdir -p "${TARGET_CONFIG_DIR}" "${TARGET_TRANSCODE_DIR}" "${VORTEXO_DATA_DIR}" \
+  "${VORTEXO_SOURCE_DIR}" "${VORTEXO_LIBRARY_DIR}/Movies" "${VORTEXO_LIBRARY_DIR}/TV"
 
 if ! mountpoint -q "${DOWNLOADS_DIR}"; then
   mount --bind "${DOWNLOADS_DIR}" "${DOWNLOADS_DIR}"
@@ -25,7 +27,20 @@ if [[ "${propagation}" != "shared" && "${propagation}" != "rshared" ]]; then
   mount --make-rshared "${DOWNLOADS_DIR}"
 fi
 
-chown -R 1000:1000 "${TARGET_CONFIG_DIR}" "${TARGET_TRANSCODE_DIR}"
+if mountpoint -q "${VORTEXO_SOURCE_DIR}"; then
+  source_type="$(findmnt -T "${VORTEXO_SOURCE_DIR}" -o FSTYPE -n 2>/dev/null || true)"
+  echo "Plex (Vortexo) will not start: ${VORTEXO_SOURCE_DIR} is already mounted (${source_type:-unknown})." >&2
+  echo "Stop Orbit or the current mount owner, confirm it released the path, then start Plex (Vortexo) again." >&2
+  exit 1
+fi
+
+if find "${VORTEXO_SOURCE_DIR}" -mindepth 1 -maxdepth 1 -print -quit | grep -q .; then
+  echo "Plex (Vortexo) will not hide local files found in ${VORTEXO_SOURCE_DIR}." >&2
+  exit 1
+fi
+
+chown -R 1000:1000 "${TARGET_CONFIG_DIR}" "${TARGET_TRANSCODE_DIR}" "${VORTEXO_DATA_DIR}"
+chmod 0700 "${VORTEXO_DATA_DIR}"
 chown 1000:1000 "${DOWNLOADS_DIR}" "${VORTEXO_LIBRARY_DIR}" \
   "${VORTEXO_LIBRARY_DIR}/Movies" "${VORTEXO_LIBRARY_DIR}/TV"
 chmod 0775 "${DOWNLOADS_DIR}" "${VORTEXO_LIBRARY_DIR}" \
