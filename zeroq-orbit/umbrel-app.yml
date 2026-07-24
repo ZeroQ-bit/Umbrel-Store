@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-orbit
 category: media
 name: Orbit
-version: "0.5.0"
+version: "0.5.1"
 tagline: Search, automate, mount, and deliver debrid media to Plex
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Umbrel-Store/master/zeroq-orbit/icon.png
 description: >-
@@ -11,8 +11,8 @@ description: >-
   Umbrel app.
 
 
-  Search for a movie or show and choose Add to Plex, or connect an MDBList or
-  Trakt list for automatic imports. Orbit tracks every request from discovery
+  Search for a movie or show and choose Add to Plex, import your Plex Watchlist,
+  or connect an MDBList or Trakt list. Orbit tracks every request from discovery
   through debrid, mount visibility, library linking, and the requested Plex scan.
 
 
@@ -41,11 +41,10 @@ defaultPassword: ""
 torOnly: false
 permissions: []
 releaseNotes: >-
-  Adds full series, season, and episode drill-down to Library, including current
-  video, audio, and subtitle stream details. Replacement searches can target a
-  movie, an entire series, one season, or one episode with Best, 1080p, or 4K
-  quality while the existing Plex stream remains available. Settings now has
-  separate Discovery, Debrid, Plex, Scrapers, and Series tabs, with controls for
-  Torrentio, Prowlarr, Jackett, Orionoid, Nyaa, and 1337x.
+  Adds Plex Watchlist imports using the Plex token already saved in Orbit.
+  Watchlist titles sync every minute by default, or manually, with Best, 1080p, or 4K
+  quality, while titles already in Plex or Orbit are skipped. Removing a title
+  from the watchlist never deletes media. Saving non-debrid Settings no longer
+  restarts the mount.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store

@@ -652,9 +652,15 @@ $("#settings-form").addEventListener("submit", async event => {
   try {
     const result = await api("/api/settings", {method: "POST", body: JSON.stringify(body)});
     showMountStatus(result.mount || {});
-    if (result.mount?.ok === false) throw new Error(mountError(result.mount));
+    if (!result.mount?.unchanged && result.mount?.ok === false) {
+      throw new Error(mountError(result.mount));
+    }
     message.textContent = "Connections saved";
-    toast(result.mount?.mounted ? "Connections saved; mount online" : "Connections saved; mount starting");
+    if (result.mount?.unchanged) {
+      toast("Settings saved; debrid mount unchanged");
+    } else {
+      toast(result.mount?.mounted ? "Connections saved; mount online" : "Connections saved; mount starting");
+    }
     loadDashboard();
   } catch (error) {
     message.textContent = error.message;
@@ -675,6 +681,27 @@ $("#restart-mount").addEventListener("click", async event => {
     toast(error.message);
   } finally {
     event.currentTarget.disabled = false;
+  }
+});
+
+$("#sync-plex-watchlist").addEventListener("click", async event => {
+  const button = event.currentTarget;
+  const message = $("#plex-watchlist-message");
+  button.disabled = true;
+  message.textContent = "Reading your Plex Watchlist…";
+  try {
+    const result = await api("/api/plex-watchlist/sync", {
+      method: "POST",
+      body: "{}",
+    });
+    message.textContent = `${result.added} added · ${result.skipped_existing} already in Plex · ${result.skipped_requested} already in Orbit`;
+    toast(`Plex Watchlist synced: ${result.added} new`);
+    loadDashboard();
+  } catch (error) {
+    message.textContent = error.message;
+    toast(error.message);
+  } finally {
+    button.disabled = false;
   }
 });
 

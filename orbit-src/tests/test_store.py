@@ -78,6 +78,48 @@ class StoreTests(unittest.TestCase):
             coordinator.verify_library_handoffs()
         self.assertEqual(self.store.list_requests()[0]["status"], "ready")
 
+    def test_plex_watchlist_skips_owned_and_duplicate_titles(self):
+        self.store.replace_plex_library([{
+            "plex_rating_key": "101", "section_id": "4", "media_type": "movie",
+            "title": "Dune", "year": 2021, "tmdb_id": 438631,
+            "quality": "4K", "versions": [],
+        }])
+        self.store.add_request({
+            "media_type": "show", "title": "Severance", "year": 2022,
+            "tmdb_id": 95396,
+        })
+        watchlist = [
+            {
+                "media_type": "movie", "title": "Dune", "year": 2021,
+                "tmdb_id": 438631,
+            },
+            {
+                "media_type": "show", "title": "Severance", "year": 2022,
+                "tmdb_id": 95396,
+            },
+            {
+                "media_type": "movie", "title": "Arrival", "year": 2016,
+                "tmdb_id": 329865,
+            },
+        ]
+        coordinator = Coordinator(self.store, self.temp.name)
+        with patch("orbit.worker.fetch_plex_watchlist", return_value=watchlist):
+            result = coordinator.sync_plex_watchlist({
+                "plex_watchlist_enabled": "true",
+                "plex_watchlist_max_items": "100",
+                "plex_watchlist_profile": "1080p",
+                "plex_token": "token",
+            })
+        self.assertEqual(result, {
+            "found": 3,
+            "added": 1,
+            "skipped_existing": 1,
+            "skipped_requested": 1,
+        })
+        arrival = next(item for item in self.store.list_requests() if item["title"] == "Arrival")
+        self.assertEqual(arrival["source"], "plex-watchlist")
+        self.assertEqual(arrival["profile"], "1080p")
+
     def test_plex_library_is_replaceable_searchable_and_matchable(self):
         self.store.replace_plex_library([{
             "plex_rating_key": "101",

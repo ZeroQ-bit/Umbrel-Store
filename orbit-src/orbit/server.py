@@ -23,7 +23,7 @@ STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 PORT = int(os.environ.get("ORBIT_PORT", "8080"))
 MOUNT_API = os.environ.get("ORBIT_MOUNT_API", "http://mount:8080")
 LEGACY_CONFIG = os.environ.get("PD_CONFIG_DIR", "/config")
-VERSION = "0.5.0"
+VERSION = "0.5.1"
 SECRET_KEYS = {
     "tmdb_api_key", "mdblist_api_key", "trakt_client_id", "torbox_api_key",
     "webdav_password", "realdebrid_api_key", "plex_token", "prowlarr_api_key",
@@ -303,6 +303,8 @@ class Handler(BaseHTTPRequestHandler):
                 "debrid_mode", "torbox_api_key", "realdebrid_api_key", "webdav_url",
                 "webdav_username", "webdav_password", "plex_url", "plex_token", "plex_username",
                 "plex_sections", "complete_aired_series", "series_completion_daily_limit",
+                "plex_watchlist_enabled", "plex_watchlist_poll_minutes",
+                "plex_watchlist_profile", "plex_watchlist_max_items",
                 "scraper_torrentio", "scraper_prowlarr", "scraper_jackett",
                 "scraper_orionoid", "scraper_nyaa", "scraper_1337x",
                 "torrentio_url", "prowlarr_url", "prowlarr_api_key",
@@ -320,10 +322,33 @@ class Handler(BaseHTTPRequestHandler):
                 ):
                     return self._json({"error": "Enable at least one scraper"}, 400)
                 values.update(scraper_values)
+            previous = store.get_settings(reveal_secrets=True)
+            debrid_keys = {
+                "debrid_mode", "torbox_api_key", "realdebrid_api_key",
+                "webdav_url", "webdav_username", "webdav_password",
+            }
+            debrid_defaults = {
+                "debrid_mode": "webdav",
+                "webdav_url": "https://webdav.torbox.app",
+            }
+            debrid_changed = any(
+                key in values
+                and values[key] != "••••••••"
+                and str(values[key]) != str(
+                    previous.get(key, debrid_defaults.get(key, ""))
+                )
+                for key in debrid_keys
+            )
             store.set_settings(values, SECRET_KEYS)
             revealed = store.get_settings(reveal_secrets=True)
             _sync_legacy_settings(revealed)
-            mount_result = _sync_mount_settings(revealed)
+            if debrid_changed:
+                mount_result = _sync_mount_settings(revealed)
+            else:
+                mount_result = {
+                    **_remote_json(MOUNT_API + "/api/status"),
+                    "unchanged": True,
+                }
             return self._json({"ok": True, "mount": mount_result})
         if path == "/api/requests":
             if not body.get("title") or not (body.get("tmdb_id") or body.get("imdb_id")):
@@ -366,6 +391,14 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/library/sync":
             try:
                 return self._json({"ok": True, **coordinator.sync_plex_library()})
+            except IntegrationError as error:
+                return self._json({"error": str(error)}, 400)
+        if path == "/api/plex-watchlist/sync":
+            try:
+                return self._json({
+                    "ok": True,
+                    **coordinator.sync_plex_watchlist(),
+                })
             except IntegrationError as error:
                 return self._json({"error": str(error)}, 400)
         if path.startswith("/api/library/") and path.endswith("/replace"):

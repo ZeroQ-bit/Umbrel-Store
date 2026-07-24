@@ -63,6 +63,36 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(items[0]["media_type"], "show")
         self.assertEqual(items[0]["tmdb_id"], 95396)
 
+    def test_plex_watchlist_uses_saved_token_and_normalises_guids(self):
+        payload = {"MediaContainer": {
+            "totalSize": 2,
+            "Metadata": [
+                {
+                    "type": "movie", "title": "Dune", "year": 2021,
+                    "Guid": [{"id": "tmdb://438631"}, {"id": "imdb://tt1160419"}],
+                },
+                {
+                    "type": "show", "title": "Severance", "year": 2022,
+                    "Guid": [{"id": "tmdb://95396"}],
+                },
+            ],
+        }}
+        with patch.object(integrations, "_json_request", return_value=payload) as request:
+            items = integrations.fetch_plex_watchlist("plex-token", 25)
+        self.assertEqual(
+            [(item["media_type"], item["tmdb_id"]) for item in items],
+            [("movie", 438631), ("show", 95396)],
+        )
+        self.assertEqual(request.call_args.args[1]["X-Plex-Token"], "plex-token")
+        parsed = integrations.urllib.parse.urlparse(request.call_args.args[0])
+        query = integrations.urllib.parse.parse_qs(parsed.query)
+        self.assertEqual(query["X-Plex-Container-Size"], ["25"])
+        self.assertEqual(query["includeGuids"], ["1"])
+
+    def test_plex_watchlist_requires_a_token(self):
+        with self.assertRaisesRegex(integrations.IntegrationError, "Plex token"):
+            integrations.fetch_plex_watchlist("", 25)
+
 
 if __name__ == "__main__":
     unittest.main()

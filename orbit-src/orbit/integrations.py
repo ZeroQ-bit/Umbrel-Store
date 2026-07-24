@@ -152,6 +152,91 @@ def fetch_trakt(list_url: str, client_id: str, limit: int = 100) -> list[dict]:
     return items
 
 
+def _normalise_plex_watchlist_item(item: dict) -> dict | None:
+    media_type = "show" if item.get("type") in ("show", "series") else "movie"
+    if item.get("type") not in ("movie", "show", "series"):
+        return None
+    tmdb_id = None
+    imdb_id = ""
+    for guid in item.get("Guid") or []:
+        value = guid.get("id", "") if isinstance(guid, dict) else str(guid)
+        if value.startswith("tmdb://"):
+            raw_id = value.removeprefix("tmdb://").split("?", 1)[0]
+            if raw_id.isdigit():
+                tmdb_id = int(raw_id)
+        elif value.startswith("imdb://"):
+            imdb_id = value.removeprefix("imdb://").split("?", 1)[0]
+    title = item.get("title")
+    if not title or (not tmdb_id and not imdb_id):
+        return None
+    try:
+        year = int(item["year"]) if item.get("year") else None
+    except (TypeError, ValueError):
+        year = None
+    return {
+        "media_type": media_type,
+        "title": title,
+        "year": year,
+        "tmdb_id": tmdb_id,
+        "imdb_id": imdb_id,
+        "poster_path": item.get("thumb") or "",
+        "overview": item.get("summary") or "",
+    }
+
+
+def fetch_plex_watchlist(token: str, limit: int = 100) -> list[dict]:
+    """Fetch the signed-in Plex account's universal movie/show watchlist."""
+    if not token:
+        raise IntegrationError("Add a Plex token in Settings")
+    item_limit = max(1, min(limit, 1000))
+    endpoint = "https://discover.provider.plex.tv/library/sections/watchlist/all"
+    headers = {
+        "X-Plex-Token": token,
+        "X-Plex-Product": "Orbit",
+        "X-Plex-Version": "0.5.1",
+        "X-Plex-Client-Identifier": "orbit-umbrel",
+    }
+    items = []
+    seen = set()
+    start = 0
+    while len(items) < item_limit:
+        page_size = min(50, item_limit - len(items))
+        url = "{}?{}".format(endpoint, urllib.parse.urlencode({
+            "includeAdvanced": "1",
+            "includeMeta": "1",
+            "includeExternalMedia": "1",
+            "includeGuids": "1",
+            "X-Plex-Container-Start": str(start),
+            "X-Plex-Container-Size": str(page_size),
+        }))
+        payload = _json_request(url, headers)
+        container = payload.get("MediaContainer", {}) if isinstance(payload, dict) else {}
+        raw_items = container.get("Metadata") or []
+        if not isinstance(raw_items, list):
+            raise IntegrationError("Plex returned an unsupported watchlist response")
+        for raw in raw_items:
+            normalised = _normalise_plex_watchlist_item(raw)
+            if not normalised:
+                continue
+            identity = (
+                normalised["media_type"],
+                normalised.get("tmdb_id") or normalised.get("imdb_id"),
+            )
+            if identity not in seen:
+                seen.add(identity)
+                items.append(normalised)
+                if len(items) >= item_limit:
+                    break
+        start += len(raw_items)
+        try:
+            total_size = int(container.get("totalSize", start))
+        except (TypeError, ValueError):
+            total_size = start
+        if not raw_items or len(raw_items) < page_size or start >= total_size:
+            break
+    return items
+
+
 def fetch_list(source: dict, settings: dict) -> list[dict]:
     if source["kind"] == "mdblist":
         return fetch_mdblist(source["url"], settings.get("mdblist_api_key", ""), source["max_items"])

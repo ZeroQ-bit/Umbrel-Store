@@ -11,7 +11,7 @@ import time
 import re
 from datetime import datetime, timezone
 
-from .integrations import IntegrationError, fetch_list
+from .integrations import IntegrationError, fetch_list, fetch_plex_watchlist
 from .plex import scan_plex_library
 from .store import Store
 
@@ -23,6 +23,7 @@ class Coordinator:
         self.stop_event = threading.Event()
         self.thread: threading.Thread | None = None
         self.last_list_poll = 0.0
+        self.last_plex_watchlist_poll = 0.0
         self.last_plex_poll = 0.0
 
     def start(self):
@@ -43,6 +44,23 @@ class Coordinator:
                 if time.monotonic() - self.last_list_poll >= max(300, interval):
                     self.sync_all_lists()
                     self.last_list_poll = time.monotonic()
+                settings = self.store.get_settings(True)
+                watchlist_interval = int(
+                    settings.get("plex_watchlist_poll_minutes", "1")
+                ) * 60
+                watchlist_enabled = str(
+                    settings.get("plex_watchlist_enabled", "false")
+                ).lower() in {"1", "true", "yes", "on"}
+                if (
+                    watchlist_enabled
+                    and time.monotonic() - self.last_plex_watchlist_poll
+                    >= max(60, watchlist_interval)
+                ):
+                    try:
+                        self.sync_plex_watchlist(settings)
+                    except IntegrationError:
+                        pass
+                    self.last_plex_watchlist_poll = time.monotonic()
                 if time.monotonic() - self.last_plex_poll >= 900:
                     try:
                         self.sync_plex_library()
@@ -137,6 +155,43 @@ class Coordinator:
                     self.sync_list(source["id"])
                 except IntegrationError:
                     pass
+
+    def sync_plex_watchlist(self, settings: dict | None = None) -> dict:
+        settings = settings or self.store.get_settings(reveal_secrets=True)
+        enabled = str(settings.get("plex_watchlist_enabled", "false")).lower() in {
+            "1", "true", "yes", "on",
+        }
+        if not enabled:
+            raise IntegrationError("Enable Plex Watchlist imports in Settings")
+        try:
+            limit = max(
+                1, min(int(settings.get("plex_watchlist_max_items", "100")), 1000)
+            )
+        except (TypeError, ValueError):
+            limit = 100
+        profile = settings.get("plex_watchlist_profile", "best")
+        if profile not in {"best", "1080p", "4k"}:
+            profile = "best"
+        items = fetch_plex_watchlist(settings.get("plex_token", ""), limit)
+        added = 0
+        skipped_existing = 0
+        skipped_requested = 0
+        for item in items:
+            if self.store.match_plex_library(item):
+                skipped_existing += 1
+                continue
+            item["profile"] = profile
+            _, created = self.store.add_request(
+                item, source="plex-watchlist", source_ref="plex-account"
+            )
+            added += int(created)
+            skipped_requested += int(not created)
+        return {
+            "found": len(items),
+            "added": added,
+            "skipped_existing": skipped_existing,
+            "skipped_requested": skipped_requested,
+        }
 
     def sync_plex_library(self) -> dict:
         settings = self.store.get_settings(reveal_secrets=True)
