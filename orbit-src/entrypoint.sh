@@ -3,6 +3,10 @@ set -eu
 
 mkdir -p "${ORBIT_DATA_DIR:-/data}" "${PD_CONFIG_DIR:-/config}" "${PD_LOG_DIR:-/logs}"
 
+# Orbit 0.5.3 briefly generated one physical manifest per title. The virtual
+# database-backed endpoint supersedes that slow cache completely.
+rm -rf "${ORBIT_DATA_DIR:-/data}/manifests"
+
 if [ "${ORBIT_ROLE:-server}" = "automation" ]; then
   exec python3 "${PD_ROOT:-/app/plex_debrid}/main.py" \
     --config-dir "${PD_CONFIG_DIR:-/config}" -service
