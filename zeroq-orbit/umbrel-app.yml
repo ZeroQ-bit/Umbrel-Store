@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-orbit
 category: media
 name: Orbit
-version: "0.3.2"
+version: "0.4.0"
 tagline: Search, automate, mount, and deliver debrid media to Plex
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Umbrel-Store/master/zeroq-orbit/icon.png
 description: >-
@@ -40,10 +40,9 @@ defaultPassword: ""
 torOnly: false
 permissions: []
 releaseNotes: >-
-  Fixes automatic-list reconnects and MDBList syncing. Reconnecting an existing
-  MDBList or Trakt URL now updates the saved source without a database error,
-  and the Connect list button locks while saving. MDBList API keys now use the
-  provider's current query-parameter authentication and current movies/shows
-  response format.
+  Adds optional aired-series completion. When Plex already has at least one
+  episode of a series, Orbit can check for and acquire the remaining episodes
+  that have aired while ignoring future episodes. A configurable daily limit
+  rotates safely through larger libraries and avoids duplicate checks.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store
