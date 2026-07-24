@@ -5,12 +5,18 @@ role="${VORTEXO_ROLE:-gateway}"
 
 case "${role}" in
   gateway)
-    mkdir -p /data/vortexo /tmp/nginx/client /tmp/nginx/proxy
+    mkdir -p \
+      /data/vortexo \
+      /tmp/nginx/client \
+      /tmp/nginx/fastcgi \
+      /tmp/nginx/proxy \
+      /tmp/nginx/scgi \
+      /tmp/nginx/uwsgi
     chown -R vortexo:vortexo /data/vortexo /tmp/nginx
     su-exec vortexo python3 -m vortexo.service &
     api_pid="$!"
     trap 'kill "${api_pid}" 2>/dev/null || true; wait "${api_pid}" 2>/dev/null || true' EXIT INT TERM
-    su-exec vortexo nginx -g "daemon off;"
+    su-exec vortexo nginx -e /dev/stderr -g "daemon off;"
     ;;
   mount)
     exec python3 -m vortexo.mount

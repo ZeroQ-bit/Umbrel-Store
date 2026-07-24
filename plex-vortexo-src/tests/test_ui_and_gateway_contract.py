@@ -12,6 +12,7 @@ class UIContractTests(unittest.TestCase):
     def setUpClass(cls):
         cls.javascript = (ROOT / "web" / "plex-vortexo.js").read_text()
         cls.nginx = (ROOT / "nginx.conf").read_text()
+        cls.entrypoint = (ROOT / "entrypoint.sh").read_text()
 
     def test_discover_card_targets_the_existing_english_provider_row(self):
         self.assertIn('"Watch from these locations"', self.javascript)
@@ -45,6 +46,13 @@ class UIContractTests(unittest.TestCase):
         self.assertIn("proxy_set_header Upgrade $http_upgrade", self.nginx)
         self.assertIn("proxy_set_header Range $http_range", self.nginx)
         self.assertIn("listen 32401", self.nginx)
+
+    def test_unprivileged_nginx_uses_only_writable_runtime_paths(self):
+        for runtime in ("client", "fastcgi", "proxy", "scgi", "uwsgi"):
+            self.assertIn(f"/tmp/nginx/{runtime}", self.nginx)
+            self.assertIn(f"/tmp/nginx/{runtime}", self.entrypoint)
+        self.assertIn("nginx -e /dev/stderr", self.entrypoint)
+        self.assertNotIn("sub_filter_types text/html", self.nginx)
 
     def test_store_updater_digest_pins_both_companion_roles(self):
         module_path = REPOSITORY_ROOT / "scripts" / "update_store_apps.py"

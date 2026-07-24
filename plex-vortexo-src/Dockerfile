@@ -30,7 +30,13 @@ COPY nginx.conf /etc/nginx/nginx.conf
 COPY entrypoint.sh /usr/local/bin/plex-vortexo
 
 RUN chmod 0755 /usr/local/bin/plex-vortexo \
-    && mkdir -p /data/vortexo /tmp/nginx/client /tmp/nginx/proxy \
+    && mkdir -p \
+      /data/vortexo \
+      /tmp/nginx/client \
+      /tmp/nginx/fastcgi \
+      /tmp/nginx/proxy \
+      /tmp/nginx/scgi \
+      /tmp/nginx/uwsgi \
     && chown -R vortexo:vortexo /data/vortexo /tmp/nginx
 
 ENV PYTHONPATH=/opt/vortexo \
