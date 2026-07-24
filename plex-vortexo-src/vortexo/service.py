@@ -79,7 +79,7 @@ class VortexoService:
         self.tv_root = os.path.abspath(
             os.environ.get("VORTEXO_TV_ROOT", "/downloads/vortexo/TV")
         )
-        self.mount_api = os.environ.get("VORTEXO_MOUNT_API", "http://127.0.0.1:32402").rstrip("/")
+        self.mount_api = os.environ.get("VORTEXO_MOUNT_API", "http://127.0.0.1:32501").rstrip("/")
         self.store = Store(self.data_dir)
         self._sessions: dict[str, float] = {}
         self._sessions_lock = threading.RLock()
@@ -808,7 +808,7 @@ class VortexoService:
             if process is None or process.poll() is not None:
                 shutil.rmtree(output_dir, ignore_errors=True)
                 os.makedirs(output_dir, mode=0o700)
-                source = f"http://127.0.0.1:32403/vortexo/play/{session_id}/source"
+                source = f"http://127.0.0.1:32502/vortexo/play/{session_id}/source"
                 command = [
                     "ffmpeg", "-hide_banner", "-loglevel", "warning", "-nostdin",
                     "-i", source,
@@ -1060,7 +1060,7 @@ class VortexoHandler(BaseHTTPRequestHandler):
 
 def serve():
     host = os.environ.get("VORTEXO_API_HOST", "127.0.0.1")
-    port = int(os.environ.get("VORTEXO_API_PORT", "32403"))
+    port = int(os.environ.get("VORTEXO_API_PORT", "32502"))
     server = ThreadingHTTPServer((host, port), VortexoHandler)
     server.daemon_threads = True
     server.service = VortexoService()  # type: ignore[attr-defined]

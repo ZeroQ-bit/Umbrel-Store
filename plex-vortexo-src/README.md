@@ -7,10 +7,11 @@ hashed web bundles.
 ## Roles
 
 - `VORTEXO_ROLE=gateway` starts the owner-authenticated API on loopback and an
-  unprivileged Nginx gateway on port `32401`. Nginx proxies Plex on `32400` and
+  unprivileged Nginx gateway on port `32500`. Nginx proxies Plex on `32400` and
   injects the local JavaScript and CSS only into `/web/index.html`.
 - `VORTEXO_ROLE=mount` starts the privileged rclone supervisor on loopback port
-  `32402`. It mounts TorBox WebDAV read-only at
+  `32501`. The gateway API uses loopback port `32502`. The supervisor mounts
+  TorBox WebDAV read-only at
   `/downloads/.vortexo-source` and refuses any mount it did not create.
 
 Settings, signed playback URLs, resume progress, and library jobs live in the
