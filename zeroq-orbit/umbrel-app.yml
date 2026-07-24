@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-orbit
 category: media
 name: Orbit
-version: "0.4.1"
+version: "0.4.2"
 tagline: Search, automate, mount, and deliver debrid media to Plex
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Umbrel-Store/master/zeroq-orbit/icon.png
 description: >-
@@ -44,6 +44,7 @@ releaseNotes: >-
   episode of a series, Orbit can check for and acquire the remaining episodes
   that have aired while ignoring future episodes. A configurable daily limit
   rotates safely through larger libraries and avoids duplicate checks. This
-  update also fixes acquisition-worker startup with the bundled engine.
+  update also fixes acquisition-worker startup and makes legacy settings
+  migrations non-interactive so background series checks run unattended.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store
