@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-plex
 category: media
 name: Plex (Vortexo)
-version: "1.43.3.10828.12"
+version: "1.43.3.10828.13"
 tagline: Plex Discover with private TorBox streaming
 icon: https://avatars.githubusercontent.com/u/11744877?v=4
 description: >-
@@ -36,16 +36,16 @@ gallery:
   - 1.jpg
   - 2.jpg
   - 3.jpg
-path: /web
+path: /web/index.html
 defaultUsername: ""
 defaultPassword: ""
 torOnly: false
 permissions:
   - GPU
 releaseNotes: >-
-  Moves the Vortexo gateway and its private helpers outside Plex's reserved
-  internal 324xx port range. This fixes the Plex startup collision while
-  keeping the stock Plex server unchanged on port 32400.
+  Opens the enhanced Plex Web entry page directly so Plex cannot redirect the
+  Umbrel tile to the browser device's localhost address. Vortexo remains on
+  port 32500 and stock Plex remains unchanged on port 32400.
 
 
   Stock Plex remains available on port 32400 for native clients and rollback.
