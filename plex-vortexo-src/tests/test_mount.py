@@ -1,4 +1,5 @@
 import os
+import subprocess
 import tempfile
 import unittest
 from unittest import mock
@@ -52,6 +53,56 @@ class MountSupervisorTests(unittest.TestCase):
         self.supervisor.host_mount_path = "/tmp/not-the-umbrel-root/source"
         with self.assertRaisesRegex(RuntimeError, "unexpected host media root"):
             self.supervisor.validate_storage()
+
+    def test_recovers_only_disconnected_mount_with_owner_marker(self):
+        os.makedirs(os.path.dirname(self.supervisor.owner_marker), exist_ok=True)
+        with open(self.supervisor.owner_marker, "w", encoding="utf-8") as handle:
+            handle.write("123\n")
+        detached = [False]
+
+        def disconnected(_path):
+            return not detached[0]
+
+        def run(*args):
+            self.assertEqual(args, ("fusermount3", "-uz", self.supervisor.mountpoint))
+            detached[0] = True
+            return subprocess.CompletedProcess(args, 0, "", "")
+
+        with mock.patch("vortexo.mount._is_disconnected", side_effect=disconnected):
+            with mock.patch("vortexo.mount._run", side_effect=run):
+                self.supervisor._recover_stale_owned_mount()
+        self.assertFalse(os.path.exists(self.supervisor.owner_marker))
+
+    def test_refuses_disconnected_mount_without_owner_marker(self):
+        with mock.patch("vortexo.mount._is_disconnected", return_value=True):
+            with self.assertRaisesRegex(RuntimeError, "without Plex Vortexo ownership"):
+                self.supervisor._recover_stale_owned_mount()
+
+    def test_owned_mount_is_detached_before_process_is_stopped(self):
+        events = []
+        process = mock.Mock()
+        process.pid = 123
+        process.poll.return_value = None
+        process.wait.return_value = None
+        self.supervisor.process = process
+        self.supervisor.owned = True
+
+        def run(*args):
+            events.append(("run", args))
+            return subprocess.CompletedProcess(args, 0, "", "")
+
+        def killpg(*args):
+            events.append(("killpg", args))
+
+        with mock.patch("vortexo.mount._run", side_effect=run):
+            with mock.patch("vortexo.mount.os.killpg", side_effect=killpg):
+                self.supervisor._stop_owned_process()
+
+        self.assertEqual(
+            events[0],
+            ("run", ("fusermount3", "-u", self.supervisor.mountpoint)),
+        )
+        self.assertEqual(events[1][0], "killpg")
 
 
 if __name__ == "__main__":
