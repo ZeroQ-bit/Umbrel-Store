@@ -33,7 +33,7 @@ services:
   gateway:
     # The store updater adds the immutable digest after the first authorized
     # GHCR publication.
-    image: ghcr.io/zeroq-bit/plex-vortexo:main@sha256:94e8d810583d4d65e7fb5f7783bf1fc28da1d3d6748acd1bdbd0f1930e3ae5f0
+    image: ghcr.io/zeroq-bit/plex-vortexo:main@sha256:c41ac2025ca784ed83dbd47b8270c817418ae9752199bf661091fe45c55c005c
     restart: on-failure
     stop_grace_period: 30s
     network_mode: host
@@ -65,7 +65,7 @@ services:
   mount:
     # Kept on the same image/tag as gateway; both references are digest-pinned
     # together by the store updater.
-    image: ghcr.io/zeroq-bit/plex-vortexo:main@sha256:94e8d810583d4d65e7fb5f7783bf1fc28da1d3d6748acd1bdbd0f1930e3ae5f0
+    image: ghcr.io/zeroq-bit/plex-vortexo:main@sha256:c41ac2025ca784ed83dbd47b8270c817418ae9752199bf661091fe45c55c005c
     restart: on-failure
     stop_grace_period: 1m
     network_mode: host
