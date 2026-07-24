@@ -32,6 +32,7 @@ class Coordinator:
         self.last_plex_refresh_request = 0.0
         self.pending_plex_refresh = False
         self.link_repair_lock = threading.Lock()
+        self.last_mount_healthy: bool | None = None
         self.last_link_repair = {
             "status": "never",
             "checked": 0,
@@ -54,6 +55,12 @@ class Coordinator:
         while not self.stop_event.wait(3):
             try:
                 self.process_one()
+                mount_healthy = self.mount_is_healthy()
+                if mount_healthy and self.last_mount_healthy is not True:
+                    # Plex may retain stale unavailable flags from the outage.
+                    # One verified scan after recovery clears them safely.
+                    self.pending_plex_refresh = True
+                self.last_mount_healthy = mount_healthy
                 self.verify_library_handoffs()
                 interval = int(self.store.get_settings(True).get("list_poll_minutes", "60")) * 60
                 if time.monotonic() - self.last_list_poll >= max(300, interval):
