@@ -27,8 +27,8 @@ library organization, and Plex refresh into one visible pipeline.
 - Remote source media with persistent VFS caching forced off
 - Exact-folder Plex scans, automatic/periodic Plex scan suppression, and
   periodic TorBox symlink repair with bounded replacement requests
-- One credential-free JSON manifest per title, containing the Plex identity,
-  current quality, media path, and symlink target for instant Orbit access
+- One credential-free virtual JSON record per title, containing the Plex
+  identity, current quality, media path, and symlink target for instant access
 
 ## Architecture
 
@@ -68,8 +68,8 @@ limit; it only monitors shows with at least one episode already in Plex.
 Replacement searches keep the current Plex stream available while the new
 release is acquired, so a failed search does not remove playable media.
 Persistent source-media caching remains disabled; only Orbit state, logs, and
-library symlinks are stored locally. Orbit writes media manifests under
-`ORBIT_DATA_DIR/manifests`; direct provider URLs are deliberately resolved live
-instead of persisted because they expire and may contain credentials. Plex
-continues to play the stable filesystem path and receives only exact-folder
-partial scans when that path changes.
+library symlinks are stored locally. Each database-backed media record is
+available from `/api/library/{id}/manifest`; direct provider URLs are
+deliberately resolved live instead of persisted because they expire and may
+contain credentials. Plex continues to play the stable filesystem path and
+receives only exact-folder partial scans when that path changes.

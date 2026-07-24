@@ -15,7 +15,6 @@ from datetime import datetime, timezone
 
 from .integrations import IntegrationError, fetch_list, fetch_plex_watchlist
 from .link_repair import repair_broken_symlinks
-from .manifests import write_library_manifests
 from .plex import refresh_plex_paths, scan_plex_library
 from .store import Store
 
@@ -443,12 +442,11 @@ class Coordinator:
                 settings["plex_url"], settings["plex_token"], section_ids
             )
             self.store.replace_plex_library(items)
-            manifests = write_library_manifests(self.data_dir, items)
             completion = self.queue_series_completions(settings)
             return {
                 "items": len(items),
                 "status": self.store.plex_library_status(),
-                "manifests": manifests,
+                "manifests": {"count": len(items), "mode": "virtual"},
                 "series_completion": completion,
             }
         except IntegrationError as error:

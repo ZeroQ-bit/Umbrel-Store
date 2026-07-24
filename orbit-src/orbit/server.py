@@ -13,6 +13,7 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from .integrations import IntegrationError, search_tmdb
+from .manifests import build_media_manifest
 from .plex import cancel_plex_scans, configure_plex_remote_library, fetch_plex_artwork
 from .store import Store
 from .worker import Coordinator
@@ -23,7 +24,7 @@ STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 PORT = int(os.environ.get("ORBIT_PORT", "8080"))
 MOUNT_API = os.environ.get("ORBIT_MOUNT_API", "http://mount:8080")
 LEGACY_CONFIG = os.environ.get("PD_CONFIG_DIR", "/config")
-VERSION = "0.5.3"
+VERSION = "0.5.4"
 SECRET_KEYS = {
     "tmdb_api_key", "mdblist_api_key", "trakt_client_id", "torbox_api_key",
     "webdav_password", "realdebrid_api_key", "plex_token", "prowlarr_api_key",
@@ -247,20 +248,7 @@ class Handler(BaseHTTPRequestHandler):
             item = store.get_plex_library_item(item_id)
             if not item:
                 return self._json({"error": "library item not found"}, 404)
-            manifest_path = os.path.join(
-                DATA_DIR,
-                "manifests",
-                item["media_type"],
-                f"{item['section_id']}-{item['plex_rating_key']}.json",
-            )
-            try:
-                with open(manifest_path, "r", encoding="utf-8") as handle:
-                    return self._json(json.load(handle))
-            except (OSError, json.JSONDecodeError):
-                return self._json(
-                    {"error": "Run Sync from Plex to create this media manifest"},
-                    404,
-                )
+            return self._json(build_media_manifest(item))
         if path.startswith("/api/library/") and path.count("/") == 3:
             try:
                 item_id = int(path.split("/")[3])

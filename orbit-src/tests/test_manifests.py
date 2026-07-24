@@ -1,13 +1,12 @@
-import json
 import os
 import tempfile
 import unittest
 
-from orbit.manifests import write_library_manifests
+from orbit.manifests import build_media_manifest
 
 
 class MediaManifestTests(unittest.TestCase):
-    def test_manifest_keeps_stable_path_and_symlink_target_without_private_url(self):
+    def test_virtual_manifest_keeps_path_and_target_without_private_url(self):
         with tempfile.TemporaryDirectory() as data_dir:
             source_dir = os.path.join(data_dir, "remote")
             library_dir = os.path.join(data_dir, "Movies", "Dune")
@@ -34,12 +33,8 @@ class MediaManifestTests(unittest.TestCase):
                 }],
             }]
 
-            result = write_library_manifests(data_dir, items)
-            path = os.path.join(data_dir, "manifests", "movie", "4-101.json")
-            with open(path, encoding="utf-8") as handle:
-                manifest = json.load(handle)
+            manifest = build_media_manifest(items[0])
 
-            self.assertEqual(result["count"], 1)
             self.assertEqual(manifest["identity"]["tmdb_id"], 438631)
             self.assertEqual(manifest["plex"]["quality"], "4K HDR")
             self.assertEqual(manifest["playback"]["sources"][0]["path"], link)
@@ -47,10 +42,7 @@ class MediaManifestTests(unittest.TestCase):
                 manifest["playback"]["sources"][0]["symlink_target"], source
             )
             self.assertIsNone(manifest["playback"]["stream_url"])
-            self.assertNotIn("token", json.dumps(manifest).lower())
-
-            second = write_library_manifests(data_dir, items)
-            self.assertEqual(second["written"], 0)
+            self.assertNotIn("token", str(manifest).lower())
 
 
 if __name__ == "__main__":

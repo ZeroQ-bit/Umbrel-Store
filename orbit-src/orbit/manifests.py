@@ -1,8 +1,7 @@
-"""Durable, credential-free JSON snapshots of Orbit's Plex inventory."""
+"""Credential-free JSON views of Orbit's persisted media inventory."""
 
 from __future__ import annotations
 
-import json
 import os
 
 
@@ -40,74 +39,34 @@ def _sources(item: dict) -> list[dict]:
     return sources
 
 
-def _write_if_changed(path: str, payload: dict) -> bool:
-    body = json.dumps(payload, indent=2, sort_keys=True) + "\n"
-    try:
-        with open(path, "r", encoding="utf-8") as handle:
-            if handle.read() == body:
-                return False
-    except OSError:
-        pass
-    temporary = path + ".orbit.tmp"
-    with open(temporary, "w", encoding="utf-8") as handle:
-        handle.write(body)
-    os.replace(temporary, path)
-    return True
-
-
-def write_library_manifests(data_dir: str, items: list[dict]) -> dict:
-    """Write one JSON file per title plus an index, without expiring URLs."""
-    root = os.path.join(data_dir, "manifests")
-    os.makedirs(root, exist_ok=True)
-    index_items = []
-    written = 0
-    for item in items:
-        media_type = "show" if item.get("media_type") == "show" else "movie"
-        directory = os.path.join(root, media_type)
-        os.makedirs(directory, exist_ok=True)
-        filename = f"{item['section_id']}-{item['plex_rating_key']}.json"
-        relative_path = f"{media_type}/{filename}"
-        payload = {
-            "schema": "orbit.media.v1",
-            "identity": {
-                "media_type": media_type,
-                "title": item.get("title") or "Unknown",
-                "year": item.get("year"),
-                "tmdb_id": item.get("tmdb_id"),
-                "imdb_id": item.get("imdb_id") or "",
-            },
-            "plex": {
-                "rating_key": str(item["plex_rating_key"]),
-                "section_id": str(item["section_id"]),
-                "quality": item.get("quality") or "Quality unavailable",
-                "episode_count": int(item.get("episode_count") or 0),
-                "versions": item.get("versions") or [],
-                "seasons": item.get("seasons") or [],
-            },
-            "playback": {
-                "kind": "debrid-mount",
-                "sources": _sources(item),
-                # Provider URLs expire and may contain credentials. Orbit keeps
-                # the stable mount path here and resolves the remote URL live.
-                "stream_url": None,
-                "stream_url_policy": "resolve-live-from-mounted-source",
-                "implementation": (
-                    "Plex opens the stable video path; Orbit's rclone mount "
-                    "resolves and refreshes the provider URL at read time."
-                ),
-            },
-        }
-        written += int(_write_if_changed(os.path.join(root, relative_path), payload))
-        index_items.append({
+def build_media_manifest(item: dict) -> dict:
+    """Project one stored media row as a Riven-style virtual JSON record."""
+    media_type = "show" if item.get("media_type") == "show" else "movie"
+    return {
+        "schema": "orbit.media.v1",
+        "identity": {
             "media_type": media_type,
             "title": item.get("title") or "Unknown",
-            "plex_rating_key": str(item["plex_rating_key"]),
-            "manifest": relative_path,
-        })
-    index = {
-        "schema": "orbit.library-index.v1",
-        "count": len(index_items),
-        "items": index_items,
+            "year": item.get("year"),
+            "tmdb_id": item.get("tmdb_id"),
+            "imdb_id": item.get("imdb_id") or "",
+        },
+        "plex": {
+            "rating_key": str(item["plex_rating_key"]),
+            "section_id": str(item["section_id"]),
+            "quality": item.get("quality") or "Quality unavailable",
+            "episode_count": int(item.get("episode_count") or 0),
+            "versions": item.get("versions") or [],
+            "seasons": item.get("seasons") or [],
+        },
+        "playback": {
+            "kind": "debrid-mount",
+            "sources": _sources(item),
+            "stream_url": None,
+            "stream_url_policy": "resolve-live-from-mounted-source",
+            "implementation": (
+                "Plex opens the stable video path; Orbit's rclone mount "
+                "resolves and refreshes the provider URL at read time."
+            ),
+        },
     }
-    written += int(_write_if_changed(os.path.join(root, "index.json"), index))
-    return {"count": len(index_items), "written": written, "path": root}

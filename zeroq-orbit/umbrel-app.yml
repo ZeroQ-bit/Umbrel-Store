@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-orbit
 category: media
 name: Orbit
-version: "0.5.3"
+version: "0.5.4"
 tagline: Search, automate, mount, and deliver debrid media to Plex
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Umbrel-Store/master/zeroq-orbit/icon.png
 description: >-
@@ -44,7 +44,9 @@ releaseNotes: >-
   Replaces full Plex recovery scans with exact-folder partial scans. Orbit can
   stop an active scan, disables automatic and periodic Plex scans while stream
   protection is enabled, and keeps unavailable entries from being emptied.
-  Adds one credential-free JSON manifest per title with Plex metadata, quality,
-  media paths, and symlink targets for instant Orbit inventory access.
+  Adds one credential-free virtual JSON record per title with Plex metadata,
+  quality, media paths, and symlink targets for instant Orbit inventory access,
+  following Riven's database-backed VFS pattern without creating thousands of
+  slow physical metadata files.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store
