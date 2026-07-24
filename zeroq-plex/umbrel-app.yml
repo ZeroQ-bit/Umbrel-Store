@@ -28,6 +28,7 @@ description: >-
   ⚠️ Because Plex still runs in host network mode on port 32400, stop the stock Plex app before installing this package. This package does not import stock Plex data automatically; migrate that data separately before switching, and keep the stopped stock app as a rollback until the new package is verified.
 developer: Plex
 website: https://www.plex.tv/
+dependencies: []
 repo: ""
 support: https://www.plex.tv/
 port: 32401
