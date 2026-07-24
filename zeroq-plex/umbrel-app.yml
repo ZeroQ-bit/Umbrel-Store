@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-plex
 category: media
 name: Plex (Vortexo)
-version: "1.43.3.10828.13"
+version: "1.43.3.10828.14"
 tagline: Plex Discover with private TorBox streaming
 icon: https://avatars.githubusercontent.com/u/11744877?v=4
 description: >-
@@ -15,6 +15,8 @@ description: >-
   This ZeroQ package adds a private Vortexo gateway to Plex Web. Open Discover
   from the Umbrel tile to search configured Vortexo Sources, play cached TorBox
   releases, or add a chosen version to Plex without changing native Plex clients.
+  Optional Plex Watchlist automation lets native Plex clients request titles:
+  Vortexo selects a cached release and adds it as ordinary Plex library media.
 
   Plex (Vortexo) owns its TorBox WebDAV mount and does not depend on Orbit.
   TorBox credentials stay server-side and only the authenticated Plex owner can
@@ -43,9 +45,14 @@ torOnly: false
 permissions:
   - GPU
 releaseNotes: >-
-  Opens the enhanced Plex Web entry page directly so Plex cannot redirect the
-  Umbrel tile to the browser device's localhost address. Vortexo remains on
-  port 32500 and stock Plex remains unchanged on port 32400.
+  Adds owner-controlled Plex Watchlist automation for native Plex clients.
+  Vortexo can check the Watchlist every minute, select a cached Best, 4K, or
+  1080p release, and run it through the persistent TorBox-to-Plex pipeline.
+
+
+  Existing Plex titles and active jobs are skipped. Movies import directly;
+  TV shows safely start with the first regular episode. Cached-only mode is on
+  by default, and removing a Watchlist item never deletes media.
 
 
   Stock Plex remains available on port 32400 for native clients and rollback.
