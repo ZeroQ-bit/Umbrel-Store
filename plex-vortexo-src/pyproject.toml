@@ -1,0 +1,8 @@
+[project]
+name = "plex-vortexo"
+version = "0.1.0"
+description = "Private Plex Web gateway and TorBox companion for Plex (Vortexo)"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
