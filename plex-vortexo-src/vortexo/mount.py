@@ -259,10 +259,11 @@ def serve():
     supervisor = MountSupervisor()
     thread = threading.Thread(target=supervisor.start, name="vortexo-rclone-start", daemon=True)
     thread.start()
-    server = ThreadingHTTPServer(("127.0.0.1", 32402), MountHandler)
+    port = int(os.environ.get("VORTEXO_MOUNT_PORT", "32501"))
+    server = ThreadingHTTPServer(("127.0.0.1", port), MountHandler)
     server.daemon_threads = True
     server.supervisor = supervisor  # type: ignore[attr-defined]
-    print("[mount] supervisor listening on 127.0.0.1:32402", flush=True)
+    print(f"[mount] supervisor listening on 127.0.0.1:{port}", flush=True)
     try:
         server.serve_forever()
     finally:

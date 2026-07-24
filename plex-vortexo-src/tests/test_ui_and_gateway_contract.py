@@ -13,6 +13,8 @@ class UIContractTests(unittest.TestCase):
         cls.javascript = (ROOT / "web" / "plex-vortexo.js").read_text()
         cls.nginx = (ROOT / "nginx.conf").read_text()
         cls.entrypoint = (ROOT / "entrypoint.sh").read_text()
+        cls.service = (ROOT / "vortexo" / "service.py").read_text()
+        cls.mount = (ROOT / "vortexo" / "mount.py").read_text()
 
     def test_discover_card_targets_the_existing_english_provider_row(self):
         self.assertIn('"Watch from these locations"', self.javascript)
@@ -45,7 +47,17 @@ class UIContractTests(unittest.TestCase):
         self.assertIn("location / {", self.nginx)
         self.assertIn("proxy_set_header Upgrade $http_upgrade", self.nginx)
         self.assertIn("proxy_set_header Range $http_range", self.nginx)
-        self.assertIn("listen 32401", self.nginx)
+        self.assertIn("listen 32500", self.nginx)
+
+    def test_companion_ports_do_not_overlap_plex_internal_ports(self):
+        self.assertIn("127.0.0.1:32502", self.nginx)
+        self.assertIn('"http://127.0.0.1:32501"', self.service)
+        self.assertIn('"VORTEXO_API_PORT", "32502"', self.service)
+        self.assertIn('"VORTEXO_MOUNT_PORT", "32501"', self.mount)
+        for reserved_port in ("32401", "32402", "32403"):
+            self.assertNotIn(reserved_port, self.nginx)
+            self.assertNotIn(reserved_port, self.service)
+            self.assertNotIn(reserved_port, self.mount)
 
     def test_unprivileged_nginx_uses_only_writable_runtime_paths(self):
         for runtime in ("client", "fastcgi", "proxy", "scgi", "uwsgi"):
