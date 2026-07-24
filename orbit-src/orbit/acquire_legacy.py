@@ -6,6 +6,7 @@ settings cannot corrupt Orbit's long-running control plane.
 
 from __future__ import annotations
 
+import builtins
 import datetime
 import json
 import os
@@ -19,6 +20,16 @@ class OrbitWatchlist:
     @staticmethod
     def remove(*_args, **_kwargs):
         return None
+
+
+def load_engine_settings(ui) -> None:
+    """Apply legacy settings migrations without prompting a background worker."""
+    original_input = builtins.input
+    builtins.input = lambda *_args, **_kwargs: ""
+    try:
+        ui.load()
+    finally:
+        builtins.input = original_input
 
 
 def main() -> int:
@@ -43,7 +54,7 @@ def main() -> int:
     ui.config_dir = config_dir
     ui.service_mode = True
     set_log_dir(config_dir)
-    ui.load()
+    load_engine_settings(ui)
 
     media = SimpleNamespace(
         id=job["id"],
