@@ -428,7 +428,7 @@ function renderLibraryDetail(item) {
     </section>
     <section class="detail-section replacement-section"><h3>Replacement</h3>${replacement}</section>
     ${item.media_type === "show" ? `<section class="detail-section"><h3>Seasons and episodes <span>${(item.seasons || []).length}</span></h3>${seasonRows(item)}</section>` : ""}
-    <section class="detail-section metadata"><h3>Identifiers</h3><p>Plex ${esc(item.plex_rating_key)}${item.tmdb_id ? ` · TMDb ${item.tmdb_id}` : ""}${item.imdb_id ? ` · IMDb ${esc(item.imdb_id)}` : ""}</p></section>
+    <section class="detail-section metadata"><h3>Identifiers</h3><p>Plex ${esc(item.plex_rating_key)}${item.tmdb_id ? ` · TMDb ${item.tmdb_id}` : ""}${item.imdb_id ? ` · IMDb ${esc(item.imdb_id)}` : ""}</p><p><a href="/api/library/${item.id}/manifest" target="_blank" rel="noopener">View Orbit media JSON ↗</a></p></section>
   `;
   const image = $("#library-detail-content img");
   if (image) image.addEventListener("error", () => image.remove());
@@ -715,9 +715,29 @@ $("#repair-plex-streams").addEventListener("click", async event => {
       method: "POST",
       body: "{}",
     });
-    message.textContent = `${result.repaired} links repaired · ${result.queued} replacements queued · ${result.refreshed_sections.length} Plex sections refreshed`;
+    message.textContent = `${result.repaired} links repaired · ${result.queued} replacements queued · ${result.refreshed_paths || 0} folders refreshed`;
     toast(result.error || "Plex stream protection check complete");
     loadDashboard();
+  } catch (error) {
+    message.textContent = error.message;
+    toast(error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+$("#stop-plex-scan").addEventListener("click", async event => {
+  const button = event.currentTarget;
+  const message = $("#plex-repair-message");
+  button.disabled = true;
+  message.textContent = "Stopping current Plex scans…";
+  try {
+    const result = await api("/api/library/cancel-scan", {
+      method: "POST",
+      body: "{}",
+    });
+    message.textContent = `Stopped scans for ${result.cancelled_sections.length} Plex libraries`;
+    toast("Plex library scan stopped");
   } catch (error) {
     message.textContent = error.message;
     toast(error.message);

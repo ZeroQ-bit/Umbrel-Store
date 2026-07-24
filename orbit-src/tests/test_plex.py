@@ -114,6 +114,45 @@ class PlexInventoryTests(unittest.TestCase):
             "/downloads/vortexo/Movies/Missing.mkv",
         )
 
+    def test_partial_refresh_only_requests_distinct_exact_paths(self):
+        with patch.object(plex, "_plex_command") as command:
+            refreshed = plex.refresh_plex_paths(
+                "http://plex",
+                "token",
+                [
+                    ("4", "/movies/Dune"),
+                    ("4", "/movies/Dune"),
+                    ("5", "/shows/Foundation"),
+                ],
+            )
+        self.assertEqual(len(refreshed), 2)
+        self.assertEqual(
+            command.call_args_list[0].args[3],
+            {"path": "/movies/Dune"},
+        )
+        self.assertEqual(
+            command.call_args_list[1].args[3],
+            {"path": "/shows/Foundation"},
+        )
+
+    def test_remote_library_preferences_stop_background_full_scans(self):
+        with patch.object(plex, "_plex_command") as command:
+            result = plex.configure_plex_remote_library("http://plex", "token")
+        self.assertFalse(result["automatic_scans"])
+        self.assertFalse(result["periodic_scans"])
+        self.assertEqual(command.call_args.kwargs["method"], "PUT")
+        self.assertEqual(command.call_args.args[2], "/:/prefs")
+        self.assertEqual(command.call_args.args[3]["autoEmptyTrash"], "0")
+
+    def test_cancel_scan_uses_plex_refresh_delete(self):
+        with patch.object(plex, "_plex_command") as command:
+            cancelled = plex.cancel_plex_scans(
+                "http://plex", "token", ["4", "5"]
+            )
+        self.assertEqual(cancelled, ["4", "5"])
+        self.assertEqual(command.call_count, 2)
+        self.assertEqual(command.call_args.kwargs["method"], "DELETE")
+
 
 if __name__ == "__main__":
     unittest.main()

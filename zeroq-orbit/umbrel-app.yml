@@ -2,7 +2,7 @@ manifestVersion: 1.1
 id: zeroq-orbit
 category: media
 name: Orbit
-version: "0.5.2"
+version: "0.5.3"
 tagline: Search, automate, mount, and deliver debrid media to Plex
 icon: https://raw.githubusercontent.com/ZeroQ-bit/Umbrel-Store/master/zeroq-orbit/icon.png
 description: >-
@@ -41,11 +41,10 @@ defaultPassword: ""
 torOnly: false
 permissions: []
 releaseNotes: >-
-  Adds remote-stream protection for Plex. Orbit now checks Plex-unavailable
-  paths every five minutes, safely retargets broken symlinks when a matching
-  TorBox stream still exists, and queues bounded replacement searches when it
-  does not. Plex scans are blocked while the mount is unhealthy and run once
-  after mount recovery to clear stale unavailable flags. Also adds one-minute
-  Plex Watchlist imports with duplicate prevention and non-destructive removal.
+  Replaces full Plex recovery scans with exact-folder partial scans. Orbit can
+  stop an active scan, disables automatic and periodic Plex scans while stream
+  protection is enabled, and keeps unavailable entries from being emptied.
+  Adds one credential-free JSON manifest per title with Plex metadata, quality,
+  media paths, and symlink targets for instant Orbit inventory access.
 submitter: ZeroQ
 submission: https://github.com/ZeroQ-bit/Umbrel-Store

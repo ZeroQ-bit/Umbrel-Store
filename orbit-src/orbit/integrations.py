@@ -193,7 +193,7 @@ def fetch_plex_watchlist(token: str, limit: int = 100) -> list[dict]:
     headers = {
         "X-Plex-Token": token,
         "X-Plex-Product": "Orbit",
-        "X-Plex-Version": "0.5.2",
+        "X-Plex-Version": "0.5.3",
         "X-Plex-Client-Identifier": "orbit-umbrel",
     }
     items = []

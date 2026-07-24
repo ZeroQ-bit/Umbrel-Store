@@ -15,7 +15,8 @@ from datetime import datetime, timezone
 
 from .integrations import IntegrationError, fetch_list, fetch_plex_watchlist
 from .link_repair import repair_broken_symlinks
-from .plex import refresh_plex_sections, scan_plex_library
+from .manifests import write_library_manifests
+from .plex import refresh_plex_paths, scan_plex_library
 from .store import Store
 
 
@@ -29,10 +30,7 @@ class Coordinator:
         self.last_plex_watchlist_poll = 0.0
         self.last_plex_poll = 0.0
         self.last_link_repair_poll = 0.0
-        self.last_plex_refresh_request = 0.0
-        self.pending_plex_refresh = False
         self.link_repair_lock = threading.Lock()
-        self.last_mount_healthy: bool | None = None
         self.last_link_repair = {
             "status": "never",
             "checked": 0,
@@ -55,12 +53,6 @@ class Coordinator:
         while not self.stop_event.wait(3):
             try:
                 self.process_one()
-                mount_healthy = self.mount_is_healthy()
-                if mount_healthy and self.last_mount_healthy is not True:
-                    # Plex may retain stale unavailable flags from the outage.
-                    # One verified scan after recovery clears them safely.
-                    self.pending_plex_refresh = True
-                self.last_mount_healthy = mount_healthy
                 self.verify_library_handoffs()
                 interval = int(self.store.get_settings(True).get("list_poll_minutes", "60")) * 60
                 if time.monotonic() - self.last_list_poll >= max(300, interval):
@@ -144,7 +136,7 @@ class Coordinator:
             "show": os.environ.get("ORBIT_TV_DIR", "/downloads/vortexo/TV"),
         }
         pending = [item for item in self.store.list_requests(500) if item["status"] == "library_pending"]
-        ready = 0
+        ready_paths = []
         if not self.mount_is_healthy():
             return
         for item in pending:
@@ -169,17 +161,9 @@ class Coordinator:
                     item["id"], "ready",
                     "Playable library link verified; Plex scan requested",
                 )
-                ready += 1
-        if ready:
-            self.pending_plex_refresh = True
-        if (
-            self.pending_plex_refresh
-            and time.monotonic() - self.last_plex_refresh_request >= 30
-        ):
-            refreshed = self.refresh_plex_if_healthy()
-            if refreshed:
-                self.pending_plex_refresh = False
-                self.last_plex_refresh_request = time.monotonic()
+                ready_paths.extend((item["media_type"], os.path.join(root, name)) for name in matching)
+        if ready_paths:
+            self.refresh_plex_paths_if_healthy(ready_paths)
 
     @staticmethod
     def _folder_has_playable_video(path: str) -> bool:
@@ -214,18 +198,37 @@ class Coordinator:
             if part.strip()
         ]
 
-    def refresh_plex_if_healthy(
-        self, settings: dict | None = None, section_ids: set[str] | None = None
-    ) -> list[str]:
+    def refresh_plex_paths_if_healthy(
+        self,
+        media_paths: list[tuple[str, str]],
+        settings: dict | None = None,
+    ) -> list[dict]:
         settings = settings or self.store.get_settings(reveal_secrets=True)
         if not self.mount_is_healthy():
             return []
-        selected = sorted(section_ids or set(self._section_ids(settings)))
-        if not selected or not settings.get("plex_url") or not settings.get("plex_token"):
+        section_paths = []
+        for media_type, folder_path in media_paths:
+            section_ids = self.store.plex_section_ids(media_type) or self._section_ids(settings)
+            for section_id in section_ids:
+                section_paths.append((section_id, folder_path))
+        if not section_paths or not settings.get("plex_url") or not settings.get("plex_token"):
             return []
-        return refresh_plex_sections(
-            settings["plex_url"], settings["plex_token"], selected
+        return refresh_plex_paths(
+            settings["plex_url"], settings["plex_token"], section_paths
         )
+
+    @staticmethod
+    def _library_folder(path: str, library_root: str) -> str:
+        root = os.path.abspath(library_root)
+        candidate = os.path.abspath(path)
+        try:
+            relative = os.path.relpath(candidate, root)
+        except ValueError:
+            return ""
+        if relative == ".." or relative.startswith(".." + os.sep):
+            return ""
+        first = relative.split(os.sep, 1)[0]
+        return os.path.join(root, first)
 
     @staticmethod
     def _version_paths(versions: list[dict]) -> list[tuple[str, bool]]:
@@ -295,7 +298,7 @@ class Coordinator:
             candidate_links=unavailable_paths,
         )
         queued = 0
-        stale_sections: set[str] = set()
+        stale_paths: list[tuple[str, str]] = []
         for item, scope, season_number, episode_number, paths in inventory_scopes:
             path_states = [
                 (path, os.path.exists(path), plex_available)
@@ -303,7 +306,17 @@ class Coordinator:
             ]
             if any(exists for _path, exists, _available in path_states):
                 if any(not available for _path, _exists, available in path_states):
-                    stale_sections.add(str(item["section_id"]))
+                    root = roots[item["media_type"]]
+                    folder = next(
+                        (
+                            self._library_folder(path, root)
+                            for path, exists, _available in path_states
+                            if exists and self._library_folder(path, root)
+                        ),
+                        "",
+                    )
+                    if folder:
+                        stale_paths.append((str(item["section_id"]), folder))
                 continue
             if queued >= max_per_run:
                 continue
@@ -324,13 +337,14 @@ class Coordinator:
                 detail_override=label,
             )
             queued += int(created)
-        if repaired["repaired"]:
-            stale_sections.update(self._section_ids(settings))
         refreshed = []
         error = repaired.get("error") or ""
-        if stale_sections:
+        if stale_paths:
             try:
-                refreshed = self.refresh_plex_if_healthy(settings, stale_sections)
+                if self.mount_is_healthy():
+                    refreshed = refresh_plex_paths(
+                        settings["plex_url"], settings["plex_token"], stale_paths
+                    )
             except IntegrationError as exc:
                 error = str(exc)
         self.last_link_repair = {
@@ -340,7 +354,10 @@ class Coordinator:
             "repaired": repaired["repaired"],
             "remaining": len(repaired["remaining"]),
             "queued": queued,
-            "refreshed_sections": refreshed,
+            "refreshed_sections": sorted({
+                item["section_id"] for item in refreshed
+            }),
+            "refreshed_paths": len(refreshed),
             "error": error,
         }
         return self.last_link_repair
@@ -426,10 +443,12 @@ class Coordinator:
                 settings["plex_url"], settings["plex_token"], section_ids
             )
             self.store.replace_plex_library(items)
+            manifests = write_library_manifests(self.data_dir, items)
             completion = self.queue_series_completions(settings)
             return {
                 "items": len(items),
                 "status": self.store.plex_library_status(),
+                "manifests": manifests,
                 "series_completion": completion,
             }
         except IntegrationError as error:

@@ -445,6 +445,20 @@ class Store:
             ).fetchall()
         return [self._decode_library_row(row) for row in rows]
 
+    def plex_section_ids(self, media_type: str = "") -> list[str]:
+        with self.connection() as db:
+            if media_type in {"movie", "show"}:
+                rows = db.execute(
+                    """SELECT DISTINCT section_id FROM plex_library
+                       WHERE media_type=? ORDER BY section_id""",
+                    (media_type,),
+                ).fetchall()
+            else:
+                rows = db.execute(
+                    "SELECT DISTINCT section_id FROM plex_library ORDER BY section_id"
+                ).fetchall()
+        return [str(row["section_id"]) for row in rows]
+
     def queue_library_replacement(
         self,
         item: dict,

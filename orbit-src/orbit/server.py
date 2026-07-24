@@ -13,7 +13,7 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from .integrations import IntegrationError, search_tmdb
-from .plex import fetch_plex_artwork
+from .plex import cancel_plex_scans, configure_plex_remote_library, fetch_plex_artwork
 from .store import Store
 from .worker import Coordinator
 
@@ -23,7 +23,7 @@ STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 PORT = int(os.environ.get("ORBIT_PORT", "8080"))
 MOUNT_API = os.environ.get("ORBIT_MOUNT_API", "http://mount:8080")
 LEGACY_CONFIG = os.environ.get("PD_CONFIG_DIR", "/config")
-VERSION = "0.5.2"
+VERSION = "0.5.3"
 SECRET_KEYS = {
     "tmdb_api_key", "mdblist_api_key", "trakt_client_id", "torbox_api_key",
     "webdav_password", "realdebrid_api_key", "plex_token", "prowlarr_api_key",
@@ -239,6 +239,28 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"events": store.events(request_id)})
         if path == "/api/lists":
             return self._json({"lists": store.list_sources()})
+        if path.startswith("/api/library/") and path.endswith("/manifest"):
+            try:
+                item_id = int(path.split("/")[3])
+            except (IndexError, ValueError):
+                return self._json({"error": "invalid library item"}, 400)
+            item = store.get_plex_library_item(item_id)
+            if not item:
+                return self._json({"error": "library item not found"}, 404)
+            manifest_path = os.path.join(
+                DATA_DIR,
+                "manifests",
+                item["media_type"],
+                f"{item['section_id']}-{item['plex_rating_key']}.json",
+            )
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as handle:
+                    return self._json(json.load(handle))
+            except (OSError, json.JSONDecodeError):
+                return self._json(
+                    {"error": "Run Sync from Plex to create this media manifest"},
+                    404,
+                )
         if path.startswith("/api/library/") and path.count("/") == 3:
             try:
                 item_id = int(path.split("/")[3])
@@ -348,6 +370,21 @@ class Handler(BaseHTTPRequestHandler):
             store.set_settings(values, SECRET_KEYS)
             revealed = store.get_settings(reveal_secrets=True)
             _sync_legacy_settings(revealed)
+            plex_protection = {}
+            protection_enabled = str(
+                revealed.get("plex_link_repair_enabled", "true")
+            ).lower() in {"1", "true", "yes", "on"}
+            if (
+                protection_enabled
+                and revealed.get("plex_url")
+                and revealed.get("plex_token")
+            ):
+                try:
+                    plex_protection = configure_plex_remote_library(
+                        revealed["plex_url"], revealed["plex_token"]
+                    )
+                except IntegrationError as error:
+                    plex_protection = {"error": str(error)}
             if debrid_changed:
                 mount_result = _sync_mount_settings(revealed)
             else:
@@ -355,7 +392,11 @@ class Handler(BaseHTTPRequestHandler):
                     **_remote_json(MOUNT_API + "/api/status"),
                     "unchanged": True,
                 }
-            return self._json({"ok": True, "mount": mount_result})
+            return self._json({
+                "ok": True,
+                "mount": mount_result,
+                "plex_protection": plex_protection,
+            })
         if path == "/api/requests":
             if not body.get("title") or not (body.get("tmdb_id") or body.get("imdb_id")):
                 return self._json({"error": "title and a metadata ID are required"}, 400)
@@ -405,6 +446,17 @@ class Handler(BaseHTTPRequestHandler):
                     "ok": True,
                     **coordinator.repair_plex_streams(),
                 })
+            except IntegrationError as error:
+                return self._json({"error": str(error)}, 400)
+        if path == "/api/library/cancel-scan":
+            settings = store.get_settings(reveal_secrets=True)
+            try:
+                cancelled = cancel_plex_scans(
+                    settings.get("plex_url", ""),
+                    settings.get("plex_token", ""),
+                    coordinator._section_ids(settings),
+                )
+                return self._json({"ok": True, "cancelled_sections": cancelled})
             except IntegrationError as error:
                 return self._json({"error": str(error)}, 400)
         if path == "/api/plex-watchlist/sync":

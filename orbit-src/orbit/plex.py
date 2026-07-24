@@ -307,31 +307,84 @@ def scan_plex_library(base_url: str, token: str, section_ids: list[str]) -> list
     return items
 
 
-def refresh_plex_sections(base_url: str, token: str, section_ids: list[str]) -> list[str]:
-    """Request health-gated scans for the supplied Plex library sections."""
+def _plex_command(
+    base_url: str,
+    token: str,
+    path: str,
+    params: dict | None = None,
+    method: str = "GET",
+) -> None:
     if not base_url or not token:
         raise IntegrationError("Add the Plex server URL and token in Settings")
+    query = urllib.parse.urlencode(params or {})
+    url = f"{base_url.rstrip('/')}{path}"
+    if query:
+        url = f"{url}?{query}"
+    request = urllib.request.Request(
+        url,
+        headers={**PLEX_HEADERS, "X-Plex-Token": token},
+        method=method,
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            response.read()
+    except urllib.error.HTTPError as error:
+        if error.code in (401, 403):
+            raise IntegrationError("Plex rejected the saved token") from error
+        raise IntegrationError(f"Plex returned HTTP {error.code}") from error
+    except (urllib.error.URLError, TimeoutError) as error:
+        raise IntegrationError(f"Could not update the Plex library: {error}") from error
+
+
+def refresh_plex_paths(
+    base_url: str, token: str, section_paths: list[tuple[str, str]]
+) -> list[dict]:
+    """Request partial scans only for exact library folders that changed."""
     refreshed = []
-    for section_id in section_ids:
-        url = (
-            f"{base_url.rstrip('/')}/library/sections/"
-            f"{urllib.parse.quote(str(section_id))}/refresh"
+    seen = set()
+    for section_id, folder_path in section_paths:
+        pair = (str(section_id), str(folder_path))
+        if not pair[0] or not pair[1] or pair in seen:
+            continue
+        seen.add(pair)
+        _plex_command(
+            base_url,
+            token,
+            f"/library/sections/{urllib.parse.quote(pair[0])}/refresh",
+            {"path": pair[1]},
         )
-        request = urllib.request.Request(
-            url,
-            headers={**PLEX_HEADERS, "X-Plex-Token": token},
-        )
-        try:
-            with urllib.request.urlopen(request, timeout=30) as response:
-                response.read()
-        except urllib.error.HTTPError as error:
-            if error.code in (401, 403):
-                raise IntegrationError("Plex rejected the saved token") from error
-            raise IntegrationError(f"Plex returned HTTP {error.code}") from error
-        except (urllib.error.URLError, TimeoutError) as error:
-            raise IntegrationError(f"Could not refresh the Plex library: {error}") from error
-        refreshed.append(str(section_id))
+        refreshed.append({"section_id": pair[0], "path": pair[1]})
     return refreshed
+
+
+def cancel_plex_scans(base_url: str, token: str, section_ids: list[str]) -> list[str]:
+    """Cancel currently running Plex library scans."""
+    cancelled = []
+    for section_id in section_ids:
+        _plex_command(
+            base_url,
+            token,
+            f"/library/sections/{urllib.parse.quote(str(section_id))}/refresh",
+            method="DELETE",
+        )
+        cancelled.append(str(section_id))
+    return cancelled
+
+
+def configure_plex_remote_library(base_url: str, token: str) -> dict:
+    """Make Orbit the scan owner and keep unavailable items in Plex trash."""
+    preferences = {
+        "FSEventLibraryUpdatesEnabled": "0",
+        "FSEventLibraryPartialScanEnabled": "0",
+        "ScheduledLibraryUpdatesEnabled": "0",
+        "autoEmptyTrash": "0",
+    }
+    _plex_command(base_url, token, "/:/prefs", preferences, method="PUT")
+    return {
+        "automatic_scans": False,
+        "periodic_scans": False,
+        "automatic_empty_trash": False,
+    }
 
 
 def fetch_plex_artwork(base_url: str, token: str, thumb: str) -> tuple[bytes, str]:

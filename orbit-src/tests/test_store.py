@@ -79,7 +79,7 @@ class StoreTests(unittest.TestCase):
         coordinator = Coordinator(self.store, self.temp.name)
         with patch.dict(os.environ, {"ORBIT_MOVIES_DIR": movies, "ORBIT_TV_DIR": television}), \
                 patch.object(coordinator, "mount_is_healthy", return_value=True), \
-                patch.object(coordinator, "refresh_plex_if_healthy", return_value=[]):
+                patch.object(coordinator, "refresh_plex_paths_if_healthy", return_value=[]):
             coordinator.verify_library_handoffs()
         self.assertEqual(self.store.list_requests()[0]["status"], "ready")
 
@@ -150,7 +150,7 @@ class StoreTests(unittest.TestCase):
                     "remaining": [missing],
                     "error": "",
                 }), \
-                patch.object(coordinator, "refresh_plex_if_healthy", return_value=[]) as refresh:
+                patch("orbit.worker.refresh_plex_paths", return_value=[]) as refresh:
             result = coordinator.repair_plex_streams({
                 "torbox_api_key": "token",
                 "plex_link_repair_max_per_run": "10",
