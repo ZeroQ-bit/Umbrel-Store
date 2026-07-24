@@ -99,6 +99,21 @@ class PlexInventoryTests(unittest.TestCase):
         self.assertEqual(versions[0]["dynamic_range"], "HDR")
         self.assertEqual(versions[0]["video_codec"], "HEVC")
 
+    def test_plex_part_unavailable_flag_is_preserved(self):
+        node = ET.fromstring("""
+        <Video ratingKey="401" type="movie" title="Missing">
+          <Media videoResolution="1080">
+            <Part file="/downloads/vortexo/Movies/Missing.mkv" exists="0"/>
+          </Media>
+        </Video>
+        """)
+        versions = plex._media_versions(node)
+        self.assertFalse(versions[0]["available"])
+        self.assertEqual(
+            versions[0]["file"],
+            "/downloads/vortexo/Movies/Missing.mkv",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

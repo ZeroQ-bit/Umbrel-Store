@@ -23,7 +23,7 @@ STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 PORT = int(os.environ.get("ORBIT_PORT", "8080"))
 MOUNT_API = os.environ.get("ORBIT_MOUNT_API", "http://mount:8080")
 LEGACY_CONFIG = os.environ.get("PD_CONFIG_DIR", "/config")
-VERSION = "0.5.1"
+VERSION = "0.5.2"
 SECRET_KEYS = {
     "tmdb_api_key", "mdblist_api_key", "trakt_client_id", "torbox_api_key",
     "webdav_password", "realdebrid_api_key", "plex_token", "prowlarr_api_key",
@@ -116,7 +116,10 @@ def _sync_legacy_settings(settings: dict):
         "Plex library partial scan": "true",
         "Plex library refresh delay": "0",
         "Library collection service": ["Plex Library"],
-        "Library update services": ["Plex Libraries"],
+        # Orbit requests scans only after the mount and final link resolve.
+        # This prevents transient FUSE outages from marking whole libraries
+        # unavailable while the acquisition subprocess is finishing.
+        "Library update services": [],
         "Library ignore services": ["Plex Discover Watch Status"],
         "Sources": scrapers or ["torrentio"],
         "Torrentio Scraper Parameters": settings.get("torrentio_url", "")
@@ -203,6 +206,7 @@ class Handler(BaseHTTPRequestHandler):
             result = store.dashboard()
             result["mount"] = _remote_json(MOUNT_API + "/api/status")
             result["plex_library"] = store.plex_library_status()
+            result["link_repair"] = coordinator.last_link_repair
             return self._json(result)
         if path == "/api/settings":
             return self._json(store.get_settings())
@@ -305,6 +309,8 @@ class Handler(BaseHTTPRequestHandler):
                 "plex_sections", "complete_aired_series", "series_completion_daily_limit",
                 "plex_watchlist_enabled", "plex_watchlist_poll_minutes",
                 "plex_watchlist_profile", "plex_watchlist_max_items",
+                "plex_link_repair_enabled", "plex_link_repair_interval_minutes",
+                "plex_link_repair_max_per_run",
                 "scraper_torrentio", "scraper_prowlarr", "scraper_jackett",
                 "scraper_orionoid", "scraper_nyaa", "scraper_1337x",
                 "torrentio_url", "prowlarr_url", "prowlarr_api_key",
@@ -391,6 +397,14 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/library/sync":
             try:
                 return self._json({"ok": True, **coordinator.sync_plex_library()})
+            except IntegrationError as error:
+                return self._json({"error": str(error)}, 400)
+        if path == "/api/library/repair":
+            try:
+                return self._json({
+                    "ok": True,
+                    **coordinator.repair_plex_streams(),
+                })
             except IntegrationError as error:
                 return self._json({"error": str(error)}, 400)
         if path == "/api/plex-watchlist/sync":

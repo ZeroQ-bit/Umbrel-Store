@@ -141,6 +141,11 @@ def _media_versions(node: ET.Element) -> list[dict]:
             "bitrate": bitrate,
             "size": size,
             "file": part.get("file", "") if part is not None else "",
+            "available": (
+                part is not None
+                and part.get("exists", "1") != "0"
+                and part.get("accessible", "1") != "0"
+            ),
             "streams": streams,
         })
     return versions
@@ -300,6 +305,33 @@ def scan_plex_library(base_url: str, token: str, section_ids: list[str]) -> list
                 show["seasons"].sort(key=lambda item: item["number"])
                 items.append(show)
     return items
+
+
+def refresh_plex_sections(base_url: str, token: str, section_ids: list[str]) -> list[str]:
+    """Request health-gated scans for the supplied Plex library sections."""
+    if not base_url or not token:
+        raise IntegrationError("Add the Plex server URL and token in Settings")
+    refreshed = []
+    for section_id in section_ids:
+        url = (
+            f"{base_url.rstrip('/')}/library/sections/"
+            f"{urllib.parse.quote(str(section_id))}/refresh"
+        )
+        request = urllib.request.Request(
+            url,
+            headers={**PLEX_HEADERS, "X-Plex-Token": token},
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                response.read()
+        except urllib.error.HTTPError as error:
+            if error.code in (401, 403):
+                raise IntegrationError("Plex rejected the saved token") from error
+            raise IntegrationError(f"Plex returned HTTP {error.code}") from error
+        except (urllib.error.URLError, TimeoutError) as error:
+            raise IntegrationError(f"Could not refresh the Plex library: {error}") from error
+        refreshed.append(str(section_id))
+    return refreshed
 
 
 def fetch_plex_artwork(base_url: str, token: str, thumb: str) -> tuple[bytes, str]:

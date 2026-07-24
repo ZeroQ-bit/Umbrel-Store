@@ -25,6 +25,8 @@ library organization, and Plex refresh into one visible pipeline.
 - Tabbed feature settings for Discovery, Debrid, Plex, Scrapers, and Series
 - Configurable Torrentio, Prowlarr, Jackett, Orionoid, Nyaa, and 1337x scrapers
 - Remote source media with persistent VFS caching forced off
+- Health-gated Plex scans and periodic TorBox symlink repair, with automatic
+  replacement requests for streams that genuinely disappeared
 
 ## Architecture
 

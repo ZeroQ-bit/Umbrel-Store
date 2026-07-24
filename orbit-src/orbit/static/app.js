@@ -705,6 +705,27 @@ $("#sync-plex-watchlist").addEventListener("click", async event => {
   }
 });
 
+$("#repair-plex-streams").addEventListener("click", async event => {
+  const button = event.currentTarget;
+  const message = $("#plex-repair-message");
+  button.disabled = true;
+  message.textContent = "Checking Plex paths and TorBox streams…";
+  try {
+    const result = await api("/api/library/repair", {
+      method: "POST",
+      body: "{}",
+    });
+    message.textContent = `${result.repaired} links repaired · ${result.queued} replacements queued · ${result.refreshed_sections.length} Plex sections refreshed`;
+    toast(result.error || "Plex stream protection check complete");
+    loadDashboard();
+  } catch (error) {
+    message.textContent = error.message;
+    toast(error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
 loadDashboard();
 loadSettings();
 setInterval(loadDashboard, 15000);

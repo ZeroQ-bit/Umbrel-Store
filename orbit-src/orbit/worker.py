@@ -9,10 +9,13 @@ import subprocess
 import threading
 import time
 import re
+import urllib.error
+import urllib.request
 from datetime import datetime, timezone
 
 from .integrations import IntegrationError, fetch_list, fetch_plex_watchlist
-from .plex import scan_plex_library
+from .link_repair import repair_broken_symlinks
+from .plex import refresh_plex_sections, scan_plex_library
 from .store import Store
 
 
@@ -25,6 +28,17 @@ class Coordinator:
         self.last_list_poll = 0.0
         self.last_plex_watchlist_poll = 0.0
         self.last_plex_poll = 0.0
+        self.last_link_repair_poll = 0.0
+        self.last_plex_refresh_request = 0.0
+        self.pending_plex_refresh = False
+        self.last_link_repair = {
+            "status": "never",
+            "checked": 0,
+            "broken": 0,
+            "repaired": 0,
+            "queued": 0,
+            "refreshed_sections": [],
+        }
 
     def start(self):
         if self.thread and self.thread.is_alive():
@@ -67,6 +81,22 @@ class Coordinator:
                     except IntegrationError:
                         pass
                     self.last_plex_poll = time.monotonic()
+                repair_enabled = str(
+                    settings.get("plex_link_repair_enabled", "true")
+                ).lower() in {"1", "true", "yes", "on"}
+                try:
+                    repair_interval = int(
+                        settings.get("plex_link_repair_interval_minutes", "5")
+                    ) * 60
+                except (TypeError, ValueError):
+                    repair_interval = 300
+                if (
+                    repair_enabled
+                    and time.monotonic() - self.last_link_repair_poll
+                    >= max(300, repair_interval)
+                ):
+                    self.repair_plex_streams(settings)
+                    self.last_link_repair_poll = time.monotonic()
             except Exception:
                 # Keep the dashboard alive even when one background operation fails.
                 time.sleep(2)
@@ -106,6 +136,9 @@ class Coordinator:
             "show": os.environ.get("ORBIT_TV_DIR", "/downloads/vortexo/TV"),
         }
         pending = [item for item in self.store.list_requests(500) if item["status"] == "library_pending"]
+        ready = 0
+        if not self.mount_is_healthy():
+            return
         for item in pending:
             root = roots[item["media_type"]]
             try:
@@ -114,13 +147,174 @@ class Coordinator:
                 continue
             tmdb_marker = f"{{tmdb-{item['tmdb_id']}}}" if item.get("tmdb_id") else ""
             title_key = re.sub(r"[^a-z0-9]+", "", item["title"].lower())
-            found = any(
-                (tmdb_marker and tmdb_marker in name)
+            matching = [
+                name for name in names
+                if (tmdb_marker and tmdb_marker in name)
                 or (title_key and re.sub(r"[^a-z0-9]+", "", name.lower()).startswith(title_key))
-                for name in names
+            ]
+            playable = any(
+                self._folder_has_playable_video(os.path.join(root, name))
+                for name in matching
             )
-            if found:
-                self.store.transition(item["id"], "ready", "Library link created; Plex scan requested")
+            if playable:
+                self.store.transition(
+                    item["id"], "ready",
+                    "Playable library link verified; Plex scan requested",
+                )
+                ready += 1
+        if ready:
+            self.pending_plex_refresh = True
+        if (
+            self.pending_plex_refresh
+            and time.monotonic() - self.last_plex_refresh_request >= 30
+        ):
+            refreshed = self.refresh_plex_if_healthy()
+            if refreshed:
+                self.pending_plex_refresh = False
+                self.last_plex_refresh_request = time.monotonic()
+
+    @staticmethod
+    def _folder_has_playable_video(path: str) -> bool:
+        extensions = {
+            ".avi", ".m2ts", ".m4v", ".mkv", ".mov", ".mp4", ".mpeg",
+            ".mpg", ".mts", ".ts", ".webm", ".wmv",
+        }
+        try:
+            for root, _directories, files in os.walk(path):
+                for filename in files:
+                    candidate = os.path.join(root, filename)
+                    if os.path.splitext(filename)[1].lower() in extensions and os.path.exists(candidate):
+                        return True
+        except OSError:
+            return False
+        return False
+
+    def mount_is_healthy(self) -> bool:
+        base = os.environ.get("ORBIT_MOUNT_API", "http://mount:8080").rstrip("/")
+        try:
+            with urllib.request.urlopen(base + "/api/status", timeout=10) as response:
+                status = json.loads(response.read())
+            return bool(status.get("mounted")) and status.get("storage_safety_ok", True) is not False
+        except (urllib.error.URLError, TimeoutError, ValueError):
+            return False
+
+    @staticmethod
+    def _section_ids(settings: dict) -> list[str]:
+        return [
+            part.strip()
+            for part in settings.get("plex_sections", "").split(",")
+            if part.strip()
+        ]
+
+    def refresh_plex_if_healthy(
+        self, settings: dict | None = None, section_ids: set[str] | None = None
+    ) -> list[str]:
+        settings = settings or self.store.get_settings(reveal_secrets=True)
+        if not self.mount_is_healthy():
+            return []
+        selected = sorted(section_ids or set(self._section_ids(settings)))
+        if not selected or not settings.get("plex_url") or not settings.get("plex_token"):
+            return []
+        return refresh_plex_sections(
+            settings["plex_url"], settings["plex_token"], selected
+        )
+
+    @staticmethod
+    def _version_paths(versions: list[dict]) -> list[tuple[str, bool]]:
+        return [
+            (str(version.get("file") or ""), bool(version.get("available", True)))
+            for version in versions or []
+            if version.get("file")
+        ]
+
+    def repair_plex_streams(self, settings: dict | None = None) -> dict:
+        """Repair broken links, queue missing streams, then clear stale Plex flags."""
+        settings = settings or self.store.get_settings(reveal_secrets=True)
+        if not self.mount_is_healthy():
+            self.last_link_repair = {
+                **self.last_link_repair,
+                "status": "deferred",
+                "error": "Debrid mount is offline; Plex scan was not requested",
+            }
+            return self.last_link_repair
+        try:
+            max_per_run = max(
+                1, min(int(settings.get("plex_link_repair_max_per_run", "10")), 100)
+            )
+        except (TypeError, ValueError):
+            max_per_run = 10
+        roots = {
+            "movie": os.environ.get("ORBIT_MOVIES_DIR", "/downloads/vortexo/Movies"),
+            "show": os.environ.get("ORBIT_TV_DIR", "/downloads/vortexo/TV"),
+        }
+        repaired = repair_broken_symlinks(
+            settings.get("torbox_api_key", ""),
+            os.environ.get("PD_DOWNLOADS_DIR", "/downloads"),
+            roots,
+            max_repairs=max_per_run * 10,
+        )
+        queued = 0
+        stale_sections: set[str] = set()
+        for item in self.store.plex_repair_inventory():
+            scopes = []
+            if item["media_type"] == "movie":
+                scopes.append(("movie", None, None, self._version_paths(item.get("versions", []))))
+            else:
+                for season in item.get("seasons") or []:
+                    for episode in season.get("episodes") or []:
+                        scopes.append((
+                            "episode",
+                            season.get("number"),
+                            episode.get("episode_number"),
+                            self._version_paths(episode.get("versions", [])),
+                        ))
+            for scope, season_number, episode_number, paths in scopes:
+                if not paths:
+                    continue
+                path_states = [(path, os.path.exists(path), plex_available) for path, plex_available in paths]
+                if any(exists for _path, exists, _available in path_states):
+                    if any(not available for _path, _exists, available in path_states):
+                        stale_sections.add(str(item["section_id"]))
+                    continue
+                if queued >= max_per_run:
+                    continue
+                if not (item.get("tmdb_id") or item.get("imdb_id")):
+                    continue
+                label = (
+                    "Restoring an unavailable movie stream"
+                    if scope == "movie"
+                    else f"Restoring unavailable S{int(season_number):02d}E{int(episode_number):02d}"
+                )
+                _request, created = self.store.queue_library_replacement(
+                    item,
+                    scope,
+                    season_number,
+                    episode_number,
+                    "best",
+                    minimum_retry_seconds=21600,
+                    detail_override=label,
+                )
+                queued += int(created)
+        if repaired["repaired"]:
+            stale_sections.update(self._section_ids(settings))
+        refreshed = []
+        error = repaired.get("error") or ""
+        if stale_sections:
+            try:
+                refreshed = self.refresh_plex_if_healthy(settings, stale_sections)
+            except IntegrationError as exc:
+                error = str(exc)
+        self.last_link_repair = {
+            "status": "ok" if not error else "attention",
+            "checked": repaired["checked"],
+            "broken": repaired["broken"],
+            "repaired": repaired["repaired"],
+            "remaining": len(repaired["remaining"]),
+            "queued": queued,
+            "refreshed_sections": refreshed,
+            "error": error,
+        }
+        return self.last_link_repair
 
     def sync_list(self, source_id: int) -> dict:
         source = self.store.get_list_source(source_id)
@@ -195,11 +389,7 @@ class Coordinator:
 
     def sync_plex_library(self) -> dict:
         settings = self.store.get_settings(reveal_secrets=True)
-        section_ids = [
-            part.strip()
-            for part in settings.get("plex_sections", "").split(",")
-            if part.strip()
-        ]
+        section_ids = self._section_ids(settings)
         if not settings.get("plex_url") or not settings.get("plex_token") or not section_ids:
             raise IntegrationError("Add the Plex URL, token, and library section IDs in Settings")
         try:

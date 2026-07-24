@@ -44,6 +44,7 @@ class ServerSettingsTests(unittest.TestCase):
         )
         self.assertEqual(legacy["Prowlarr Base URL"], "http://prowlarr:9696")
         self.assertEqual(legacy["Prowlarr API Key"], "prowlarr-token")
+        self.assertEqual(legacy["Library update services"], [])
 
 
 if __name__ == "__main__":

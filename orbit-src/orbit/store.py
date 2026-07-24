@@ -437,6 +437,14 @@ class Store:
             ).fetchone()
         return self._decode_library_row(row) if row else None
 
+    def plex_repair_inventory(self) -> list[dict]:
+        """Return detailed Plex rows for local path availability checks."""
+        with self.connection() as db:
+            rows = db.execute(
+                "SELECT * FROM plex_library ORDER BY id"
+            ).fetchall()
+        return [self._decode_library_row(row) for row in rows]
+
     def queue_library_replacement(
         self,
         item: dict,
@@ -444,6 +452,8 @@ class Store:
         season_number: int | None = None,
         episode_number: int | None = None,
         profile: str = "best",
+        minimum_retry_seconds: int = 0,
+        detail_override: str = "",
     ) -> tuple[dict, bool]:
         """Queue a safe, scoped replacement search for an existing Plex item."""
         if scope not in {"movie", "series", "season", "episode"}:
@@ -491,7 +501,9 @@ class Store:
             "episode_number": episode_number,
             "plex_rating_key": item.get("plex_rating_key") or "",
         }, separators=(",", ":"))
-        if scope == "movie":
+        if detail_override:
+            detail = detail_override
+        elif scope == "movie":
             detail = "Finding a replacement movie stream"
         elif scope == "series":
             detail = "Finding replacement streams for the full series"
@@ -512,6 +524,14 @@ class Store:
             if existing and existing["status"] in active_states:
                 return dict(existing), False
             if existing:
+                if minimum_retry_seconds > 0:
+                    try:
+                        updated = datetime.fromisoformat(existing["updated_at"])
+                        age = (datetime.now(timezone.utc) - updated).total_seconds()
+                    except (TypeError, ValueError):
+                        age = minimum_retry_seconds
+                    if age < minimum_retry_seconds:
+                        return dict(existing), False
                 db.execute(
                     """UPDATE requests
                        SET status='queued', status_detail=?, profile=?, source_ref=?,

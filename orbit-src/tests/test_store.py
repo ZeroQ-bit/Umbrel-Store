@@ -67,14 +67,19 @@ class StoreTests(unittest.TestCase):
     def test_library_link_promotes_request_to_ready(self):
         movies = os.path.join(self.temp.name, "Movies")
         television = os.path.join(self.temp.name, "TV")
-        os.makedirs(os.path.join(movies, "Dune (2021) {tmdb-438631}"))
+        dune = os.path.join(movies, "Dune (2021) {tmdb-438631}")
+        os.makedirs(dune)
+        with open(os.path.join(dune, "Dune.mkv"), "wb") as handle:
+            handle.write(b"video")
         os.makedirs(television)
         item, _ = self.store.add_request({
             "media_type": "movie", "title": "Dune", "tmdb_id": 438631, "year": 2021,
         })
         self.store.transition(item["id"], "library_pending", "Acquired")
         coordinator = Coordinator(self.store, self.temp.name)
-        with patch.dict(os.environ, {"ORBIT_MOVIES_DIR": movies, "ORBIT_TV_DIR": television}):
+        with patch.dict(os.environ, {"ORBIT_MOVIES_DIR": movies, "ORBIT_TV_DIR": television}), \
+                patch.object(coordinator, "mount_is_healthy", return_value=True), \
+                patch.object(coordinator, "refresh_plex_if_healthy", return_value=[]):
             coordinator.verify_library_handoffs()
         self.assertEqual(self.store.list_requests()[0]["status"], "ready")
 
@@ -119,6 +124,41 @@ class StoreTests(unittest.TestCase):
         arrival = next(item for item in self.store.list_requests() if item["title"] == "Arrival")
         self.assertEqual(arrival["source"], "plex-watchlist")
         self.assertEqual(arrival["profile"], "1080p")
+
+    def test_stream_protection_queues_missing_movie_without_scanning_offline_path(self):
+        missing = os.path.join(self.temp.name, "Movies", "Missing.mkv")
+        self.store.replace_plex_library([{
+            "plex_rating_key": "111",
+            "section_id": "4",
+            "media_type": "movie",
+            "title": "Missing",
+            "year": 2024,
+            "tmdb_id": 123456,
+            "quality": "1080p",
+            "versions": [{
+                "resolution": "1080p",
+                "file": missing,
+                "available": False,
+            }],
+        }])
+        coordinator = Coordinator(self.store, self.temp.name)
+        with patch.object(coordinator, "mount_is_healthy", return_value=True), \
+                patch("orbit.worker.repair_broken_symlinks", return_value={
+                    "checked": 1,
+                    "broken": 1,
+                    "repaired": 0,
+                    "remaining": [missing],
+                    "error": "",
+                }), \
+                patch.object(coordinator, "refresh_plex_if_healthy", return_value=[]) as refresh:
+            result = coordinator.repair_plex_streams({
+                "torbox_api_key": "token",
+                "plex_link_repair_max_per_run": "10",
+                "plex_sections": "4,5",
+            })
+        self.assertEqual(result["queued"], 1)
+        self.assertEqual(self.store.list_requests()[0]["source"], "library-replace")
+        refresh.assert_not_called()
 
     def test_plex_library_is_replaceable_searchable_and_matchable(self):
         self.store.replace_plex_library([{
