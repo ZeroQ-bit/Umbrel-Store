@@ -33,9 +33,11 @@ def main() -> int:
     config_dir = os.environ.get("PD_CONFIG_DIR", "/config")
     sys.path.insert(0, engine_root)
 
+    # The legacy engine initializes its package graph from ui. Importing
+    # content first leaves content.services partially initialized.
+    import ui  # type: ignore
     import content  # type: ignore
     from content.services import overseerr, plex, trakt  # type: ignore
-    import ui  # type: ignore
     from ui.ui_print import set_log_dir  # type: ignore
 
     ui.config_dir = config_dir
